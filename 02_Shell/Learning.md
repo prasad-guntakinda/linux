@@ -2,14 +2,13 @@
 
 
 - Most of the linux distros won't have GUI interface, **Shell** is the default interface to Linux.
-- A program that accepts your commands and executes those commands.
 - A shell is a program that acts as a **command-line interpreter (CLI)** and provides a text-based interface for a user to interact with the Linux operating system.
 - It is the outer layer of the OS that sits between the user and the **kernel** 
 
 - Server distributions do not include GUIs.
 - Connect over Network.
 - Desktop distributions have GUIs and CLIs.
-- 
+  
 # What is Shell in Linux?
 
 A shell is a program that acts as a command-line interpreter (CLI) and provides a text-based interface for a user to interact with the Linux operating system. It is the outer layer of the OS that sits between the user and the **kernel**, which is the core component that manages hardware and system resources.

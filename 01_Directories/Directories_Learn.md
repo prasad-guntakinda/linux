@@ -48,4 +48,87 @@ The Linux directory structure is a tree-like hierarchy defined by the Filesystem
 
 ---
 
+<details>
+<summary>How to create/update/remove directories?</summary>
+
+### Create
+
+- `mkdir <dir_name>` to create an emtpy directory
+- if you want to create multiple folders at once then use `mkdir -p <dir1/dir2/dir3>`  it will create multiple directories at once.
+
+![mkdir_demo](./images/mkdir_demo.png)
+
+#### How to navigate b/w directories & what is absolute/relative paths 
+
+- use change directory(`cd`) command to navigate b/w folders
+- `cd <path_to_change>` 
+- the path which is starting with `./` or `../` is the relative path
+- Example:
+
+````shell
+    # goto prasad dir
+    cd /home/prasad
+    ls # list contents on current dir
+    cd day-2
+    cd ./dir1 # directory on the current folder
+    cd ../test_dir # directory on the parent folder
+    cd - # Change to the previous directory 
+````
+
+- ``rmdir <dir_name>`` to delete an empty dir.
+- `rmdir -p <dir1/dir2/dir3>` to delete multiple non-empty dirs
+- `rm -rf <dir>` Recursively removes directory. 
+
+
+</details>
+
+
+---
+---
+
+<details>
+<summary>What is a Symbolic Link?</summary>
+
+- A symbolic link, or "symlink," is a file that acts as a pointer or shortcut to another file or directory on the file system. 
+- When you access the symbolic link, the operating system transparently redirects you to the original file or directory it points to. 
+- A link can be used to create a shortcut.
+  - Use for long file or directory names.
+  - Use to indicate the current version of software.
+
+### How to create symlink?
+
+- To create a symbolic link, the ``ln`` command with the ``-s`` option is used.
+-  Create a source file. 
+````shell
+    echo "This is the original file content." > original_file.txt
+    ln -s original_file.txt symlink_to_file.txt
+````
+
+- ``ln``: The command for creating links.
+- ``s``: The option to specify a symbolic (or soft) link.
+- ``original_file.txt``: The path to the source (the original file).
+- `symlink_to_file.txt`: The path and name of the link to be created. 
+- You can use ``ls -l`` to see the new symbolic link.
+- Now, ``symlink_to_file.txt`` acts as a shortcut to ``original_file.txt``. 
+- Any changes made to ``original_file.txt`` will be reflected when accessing ``symlink_to_file.txt``, and vice-versa. 
+</details>
+
+---
+---
+
+<details>
+<summary> How to read long listing output? </summary>
+
+![long_listing_output](./images/long_listing_output.png)
+
+-  : 
+- Permissions: `drwxr-xr-x`
+- Number of links: ``6``
+- Owner name: ``prasad``
+- Group name:``prasad``
+- Number of bytes in the fil:  ``4096``
+- Last modification time: ``Sep 29 11:01``
+- File name: `dir1`
+</details>
+
 
