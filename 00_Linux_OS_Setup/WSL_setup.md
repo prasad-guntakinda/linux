@@ -8,7 +8,6 @@
 </details>
 
 ---
----
 
 
 <details>
@@ -74,3 +73,36 @@
 
 
 </details>
+
+---
+
+
+<details>
+<summary>How to connect to an existing WSL?</summary>
+
+### Option-1-CLI:
+
+- Open Terminal and type `wsl` command by default it connects to Ubuntu default linux
+  
+  ![wsl_login_1](./images/wsl_login_1.png)
+
+
+- To connect to a specific distro. first list all the existing distros and login 
+
+![wsl_login_2](./images/wsl_login_2.png)
+
+
+- To Check which distro you are working use `hostnamectl` command
+
+![wsl_login_3](./images/wsl_login_3.png)
+
+### Option-2-GUI:
+
+- From Start Menu search for your desired distro and open it
+
+![wsl_login_4_gui](./images/wsl_login_4_gui.png)
+
+
+</details>
+
+---
