@@ -1,8 +1,9 @@
 # Linux Learning Progress Tracker
 
 
-- [ ] Intro to Linux Distros
-- [ ] Installation Setup
-- [ ] Intro to Directory Structure
-- [ ] Intro to Shell
-- [ ] 
+- [X] Intro to Linux Distros
+- [X] Installation Setup
+- [X] Intro to Directory Structure
+- [X] Intro to Shell
+- [ ] Intro to Directories
+- [ ] File Permissions
