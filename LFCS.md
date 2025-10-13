@@ -4,6 +4,24 @@ Course: https://kodekloud.com/courses/linux-foundation-certified-system-administ
 
 
 
+
+![alt text](image.png)
+
+## Important links:
+
+Linux Foundation Certified System Administrator (LFCS): https://training.linuxfoundation.org/certification/linux-foundation-certified-sysadmin-lfcs/
+
+Exam requirements: https://docs.linuxfoundation.org/tc-docs/certification/instructions-lfcs-and-lfce#exam-environment
+
+​Certification FAQs: https://training.linuxfoundation.org/about/faqs/certification-faq/
+
+​To ensure your system meets the exam requirements, visit this link: https://syscheck.bridge.psiexams.com/
+
+Check out the full details of the Identification requirements for the exam here: https://docs.linuxfoundation.org/tc-docs/certification/instructions-lfcs-and-lfce
+
+For additional information, visit: https://trainingsupport.linuxfoundation.org
+
+
 ## Domains & Competencies
 
 ### Operations Deployment25%
