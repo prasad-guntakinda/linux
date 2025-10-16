@@ -1,5 +1,8 @@
 # FAQs on Linux Users and Groups
 
+
+---
+
 <details>
 <summary> What is the difference b/w System Account and Service Accounts?</summary>
 
@@ -71,3 +74,6 @@ sudo nano /etc/fstab
 
 
 </details>
+
+---
+

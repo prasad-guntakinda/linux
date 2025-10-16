@@ -63,6 +63,7 @@ username:x:UID:GID:comment:home_directory:shell
 <details>
 <summary>What happens when a new user is created?</summary>
 
+
 When a new user is created, by default system takes following actions:
 
 - Assigns __UID__ to the user.
@@ -75,6 +76,28 @@ When a new user is created, by default system takes following actions:
 </details>
 
 ---
+
+<details>
+<summary> How to create a system account? </summary>
+
+```bash
+# creates a new system account, UID will be < 1000
+sudo useradd --system --no-create-home mytest_sys_acct
+sudo cat /etc/passwd
+```
+</details>
+
+---
+
+<details>
+<summary> How to modify existing user? </summary>
+
+```bash
+
+
+```
+
+</details>
 
 ---
 
