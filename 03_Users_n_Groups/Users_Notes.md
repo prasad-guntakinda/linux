@@ -2,21 +2,23 @@
 
 In Linux, users and groups are fundamental components for managing system security and permissions. They help control access to files, directories, and system resources.
 
-## Users
+## LEARN
+### Users
 
-- A user in Linux is an account that can log in and perform tasks. Each user has a unique identifier and associated permissions.
-- Each user is identified by a unique identification number or UID by the system. 
-- All the information of users in a system are stored in /etc/passwdfile. 
-- The hashed passwords for users are stored in /etc/shadow file.
+- A user in Linux is an account that can log in and perform tasks.
+- Each user has a unique identifier (UID) and associated permissions.
+- All the users info are stored in `/etc/passwd` file. 
+- Hashed passwords for users are stored in `/etc/shadow` file.
 
-### Types of Users
+#### Types of Users
 | User Type    | Description                                                                 |
 | ------------ | --------------------------------------------------------------------------- |
 | Root User    | The superuser with unrestricted access to the system.                       |
 | Regular User | A standard user with limited permissions.                                   |
 | System User  | A user created by the system for running specific services or applications. |
 
-### User Information
+#### User Information on /etc/passwd
+
 User details are stored in the `/etc/passwd` file. Each line represents a user and contains the following fields:
 ```
 username:x:UID:GID:comment:home_directory:shell
@@ -33,8 +35,29 @@ username:x:UID:GID:comment:home_directory:shell
 | `whoami`             | Displays the current user.              | `whoami`       |
 | `id`                 | Displays user ID and group information. | `id`           |
 | `adduser <username>` | Adds a new user.                        | `adduser john` |
+| `useradd <username>` | Adds a new user.                        | `useradd john` |
 | `userdel <username>` | Deletes a user.                         | `userdel john` |
 | `passwd <username>`  | Changes the password for a user.        | `passwd john`  |
+
+
+---
+
+## PRACTICE
+
+
+
+
+---
+
+
+## EXPERIMENT
+
+
+
+---
+
+
+## FAQs
 
 
 <details>
@@ -51,9 +74,8 @@ When a new user is created, by default system takes following actions:
 
 </details>
 
-
-
 ---
+
 ---
 
 ## Groups
