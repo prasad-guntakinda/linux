@@ -262,7 +262,8 @@ A group in Linux is a collection of users. Groups are used to manage permissions
 
 ### Group Information
 Group details are stored in the `/etc/group` file. Each line represents a group and contains the following fields:
-```
+```shell
+
 group_name:x:GID:member1,member2
 ```
 - `group_name`: The name of the group.
@@ -274,89 +275,82 @@ group_name:x:GID:member1,member2
 | ---------------------- | ---------------------------------- | ----------------------------- |
 | `groups <username>`    | Displays groups a user belongs to. | `groups john`                 |
 | `groupadd <groupname>` | Adds a new group.                  | `groupadd developers`         |
+| `gpasswd --add <user> <gruop>`| Administer /etc/group /etc/gshadow| `gpasswd -a john dev` |
+| `usermod -aG <group> <user>`  | Adds a user to a group.            | `usermod -aG developers john` |
+| `groupmod ` | modify a group definition on the system | ``
 | `groupdel <groupname>` | Deletes a group.                   | `groupdel developers`         |
-| `usermod -aG <group>`  | Adds a user to a group.            | `usermod -aG developers john` |
 
-## File Permissions and Ownership
 
-File permissions in Linux are based on users and groups. Each file has an owner, a group, and associated permissions.
 
-### Permission Types
-| Permission    | Description                                           |
-| ------------- | ----------------------------------------------------- |
-| `r` (read)    | Allows reading the file or directory.                 |
-| `w` (write)   | Allows modifying the file or directory.               |
-| `x` (execute) | Allows executing the file or accessing the directory. |
+### Pracrtice:
 
-### Viewing Permissions
-Use the `ls -l` command to view file permissions:
-```bash
-ls -l
-```
-Example output:
-```
--rw-r--r-- 1 john developers 1024 Oct 11 12:00 file.txt
-```
-- `-rw-r--r--`: File permissions.
-- `john`: File owner.
-- `developers`: File group.
-
-### Changing Permissions
-| Command | Description               | Example                     |
-| ------- | ------------------------- | --------------------------- |
-| `chmod` | Changes file permissions. | `chmod 755 file.txt`        |
-| `chown` | Changes file owner.       | `chown john file.txt`       |
-| `chgrp` | Changes file group.       | `chgrp developers file.txt` |
-
-## Examples
-
-### Adding a New User
+#### groupadd:
 
 ```shell
-    #Add a new user
-    sudo useradd john
-    #Set a password for the user
-    sudo passwd john
-    #Verify the user
-    id john
-    #user information
-    sudo cat /etc/passwd
-    #delete user
-    sudo userdel john
-    #  -r, --remove  remove home directory and mail spool
-    sudo userdel -r john
-
-    # to create a custome home dir. default location: /home/<username>
-     sudo useradd -d /test_user/john john
-    # to assign different shell to user. default /bin/bash
-     sudo useradd -s /bin/sh john
-    # you can use both options in one command
-    sudo useradd -d /test_users/john -s /bin/sh john
+groupadd dev1
+groupadd -g 1209 dev2
+groupadd --users john2, john3 dev3
+groupadd --system prod1
+# verify groups info
+tail /etc/group
+groups john2
+id john3
 ```
 
-### Adding a User to a Group
-1. Create a new group:
-   ```bash
-   groupadd team
-   ```
-2. Add the user to the group:
-   ```bash
-   usermod -aG team alice
-   ```
-3. Verify the user's groups:
-   ```bash
-   groups alice
-   ```
+#### gpasswd & usermode: Add/Remove users to the groups
 
-### Changing File Ownership
-1. Change the owner of a file:
-   ```bash
-   chown alice file.txt
-   ```
-2. Change the group of a file:
-   ```bash
-   chgrp team file.txt
-   ```
+__gpasswd:__
 
-## Summary
-Understanding users and groups is essential for managing permissions and ensuring system security.
+```shell
+# add one user to group
+gpasswd -a john2 dev1
+# add multiple users to the group
+gpasswd --members john3,john4,john5 dev3
+# delete user from the group
+gpasswd -d john5 dev3
+# verify user groups
+groups john5
+id -Gn john5
+tail /etc/group
+
+```
+
+__usermod:__
+
+```shell
+# it changes the primary group
+usermod -g dev2 john5
+# it replaces the old secondary gruops with new list
+usermod -G dev1,dev3 john5
+#it appends the new group to the old list
+usermod -aG prod1 john5
+
+```
+
+
+#### groupmod: modify group info
+
+```shell
+# change group id
+groupadd dev2
+groupmod -g 1120 dev2
+groupmod --new-name programmers2 dev2
+# replaces the secondary groups with new list
+groupmod --users john3,john4 dev1
+# append new user john2 to the list
+groupmod --append --users john2 dev1
+```
+
+#### groupdel: deleting the group
+
+```shell
+# you can delete a group which is not set as a primary group for any users
+groupdel dev3
+# groupdel: cannot remove the primary group of user 'john5'
+groupdel dev2
+# you can change primary group of the user by using usermod -g or use groupdel -f to force delete group
+groupdel -f dev2
+```
+
+
+

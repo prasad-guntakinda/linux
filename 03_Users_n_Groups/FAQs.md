@@ -1,5 +1,16 @@
 # FAQs on Linux Users and Groups
 
+<details>
+<summary> What happens when a new group is created on linux? </summary>
+When the groupadd command is executed in Linux, a new group account is created within the system. This process involves several key actions:
+
+__Group Creation:__ A new group is established with the specified group name. If no specific Group ID (GID) is provided using the -g option, the system assigns a unique GID based on the default values defined in /etc/login.defs.
+
+__System File Updates:__ The newly created group and its associated GID are recorded in the system's group database, primarily by updating the `/etc/group` file. This file contains a list of all groups on the system, their GIDs, and any users who are members of those groups.
+
+__Permissions and Privileges:__ The purpose of creating groups is to facilitate the management of permissions and privileges. By associating users with groups, administrators can assign common access rights to multiple users for files, directories, and other system resources, rather than managing permissions for each user individually.
+
+</details>
 
 ---
 
