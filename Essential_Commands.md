@@ -19,6 +19,28 @@ Linux commands are the building blocks for interacting with the operating system
 | `cp`    | Copies files or directories.           | `-r` (recursive), `-i` (prompt before overwrite)                          |
 | `mv`    | Moves or renames files or directories. | `-i` (prompt before overwrite)                                            |
 
+
+##### cd
+- `cd /` - go to root directory
+- `cd - ` - go to location before `cd`
+- `cd` - goto user home dir
+
+##### cp
+- `cp [source] [destination]` - copies the inidividual file
+- `cp -r [source] [destination]` - copies the directory and all the contents it has like files, sub directories and so on. 
+- if destination directory already exists then it will add a new directory under destination with source directory name, otherwise it simply creates a new directory with destination name.
+
+##### mv
+
+- `mv [source] [destination]` - if destination doesn't exist then it will rename source file with destination name
+- if destionation is a directory then it moves the file from source to inside destination dir
+- if source is directory and destination is directory and it exists it will be move source insdise the destination. if destionation doesnot exists then it will rename the source dir to destination dir
+
+##### rm
+- `rm [filename]`
+- `rm -r [directory_name]`
+
+
 ## File Viewing and Editing
 
 | Command | Description                               | Common Options/Examples  |
