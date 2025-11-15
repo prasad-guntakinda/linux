@@ -1,2 +1,0 @@
-# LFCS Essential Commands
-
