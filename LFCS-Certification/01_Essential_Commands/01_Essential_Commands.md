@@ -147,6 +147,8 @@ __For directories:__
 Pictures/ directory.
 - When directories are meant to be accessible, you'll normally find both the `r` and the `x` permissions enabled.
 
+- If user has `rw-` can user enter into the dir and execute commands?
+
 #### Evaluating Permissions:
 
 ![eval_permissions](./images/eval_permissions.png)
@@ -297,13 +299,203 @@ chmod 640 family_dog.jpg
 chmod u=rw-,g=r family_dog.jpg
 ```
 
-### Hard Links & Soft Links
+## 2.3 SUID, SGID, Stickt Bit:
+This section explains the three special permission bits in Linux: setuid (SUID), setgid (SGID), and the sticky bit. These bits are stored in the "special" permission field (the left-most digit when using octal notation), and they alter how executables run or how files inside directories are handled.
 
-- Inodes
-- stat
-- Hard Links
+- **Setuid (SUID, `u+s`)**: When set on an executable file, the process started from that executable runs with the file owner's user ID (effective UID) instead of the UID of the user who launched it. This is commonly used to allow normal users to perform specific tasks with elevated privileges (example: `/usr/bin/passwd`).
 
-### Soft Links
+- **Setgid (SGID, `g+s`)**: When set on an executable file, the process runs with the file's group ID as its effective group. When set on a directory, new files and subdirectories created within inherit the directory's group (and, on some systems, get group-execute behavior), which is useful for collaborative directories.
+
+- **Sticky bit (`o+t`)**: When set on a directory, the sticky bit prevents users from deleting or renaming files in that directory unless they are the file owner, the directory owner, or `root`. This is used on world-writable directories like `/tmp` to prevent users from removing each other's files.
+
+How these appear in `ls -l`:
+
+- Setuid: `-rwsr-xr-x` (note the `s` in the owner's execute position). If the owner's execute bit is not set, you may see `S` (uppercase) which means SUID is set but the owner execute bit is not.
+- Setgid on an executable: `-rwxr-sr-x` (note the `s` in the group's execute position). On a directory you will see `d...s...` in the group position.
+- Sticky bit on a directory: `drwxrwxrwt` (note the `t` at the end). If the execute bit for others is not set you'll see `T` (uppercase) instead.
+
+Numeric (octal) notation for the special bits: they form the left-most octal digit.
+
+- `4` = setuid
+- `2` = setgid
+- `1` = sticky
+
+So `chmod 4755 file` sets setuid + `rwxr-xr-x`, `chmod 2755 dir` sets setgid + `rwxr-sr-x`, and `chmod 1777 /tmp` sets sticky + `rwxrwxrwt`.
+
+Examples (commands you can run to try these out):
+
+1) Demonstrate SUID with a small program
+
+```
+# Create a small C program that prints uid and euid
+cat > suid_test.c <<'EOF'
+#include <stdio.h>
+#include <unistd.h>
+int main() { printf("uid=%d euid=%d\n", getuid(), geteuid()); return 0; }
+EOF
+
+# Compile
+gcc -o suid_test suid_test.c
+
+# Make it owned by root and set the SUID bit (requires root privileges)
+sudo chown root:root suid_test
+sudo chmod 4755 suid_test   # or: sudo chmod u+s suid_test
+
+# Now run as a regular user: note the effective UID becomes 0 (root)
+./suid_test
+# Expected output (when run by a non-root user):
+# uid=1000 euid=0
+```
+
+Explanation: even though a normal user launched `suid_test`, the process's effective UID is the file owner's UID (root), so `geteuid()` returns `0`.
+
+2) Demonstrate SGID on a directory (shared group collaboration)
+
+```
+# Create a shared directory and set its group
+sudo groupadd sharedgrp  # if the group doesn't exist
+mkdir -p /tmp/shareddir
+sudo chown root:sharedgrp /tmp/shareddir
+
+# Set SGID so files created inside inherit the group's gid
+sudo chmod 2775 /tmp/shareddir   # or: sudo chmod g+s /tmp/shareddir
+
+# Create a file as a regular user, then check its group
+touch /tmp/shareddir/example_file
+ls -l /tmp/shareddir/example_file
+# You should see the file's group is 'sharedgrp' (inherited from the directory)
+```
+
+3) Demonstrate the sticky bit on a public directory (like `/tmp`)
+
+```
+# Create a public directory and set permissions like /tmp
+mkdir -p /tmp/public
+chmod 1777 /tmp/public    # or: chmod o+t /tmp/public; chmod 777 /tmp/public
+
+# Now multiple users can create files, but one user cannot remove another user's file
+touch /tmp/public/alice_file
+# If another user tries to delete alice_file, it will fail unless that user is owner, dir owner, or root
+ls -ld /tmp/public
+# Expected permissions: drwxrwxrwt
+```
+
+Notes and security considerations:
+
+- Use SUID sparingly. A SUID-root executable can be a major security risk if it contains bugs — attackers can exploit it to gain root. Only trusted, small programs should be SUID-root (e.g., `passwd`).
+- SGID is useful for team directories to ensure files share the same group and collaborative permissions.
+- The sticky bit is critical for world-writable directories so users cannot delete each other's files (this is why `/tmp` is `1777`).
+- Watch for `s` vs `S` and `t` vs `T`: lowercase means special bit plus execute bit set; uppercase means special bit set but execute is not set for that scope.
+
+Common `chmod` examples:
+
+- `chmod u+s file`        # setuid
+- `chmod g+s file_or_dir` # setgid
+- `chmod o+t dir`         # sticky bit on directory
+- `chmod 4755 file`       # numeric setuid example
+- `chmod 2755 dir`        # numeric setgid example
+- `chmod 1777 dir`        # numeric sticky example (like /tmp)
+
+This concludes the SUID/SGID/Sticky-bit notes with examples. Use these commands in a safe test environment or VM, and avoid setting SUID on untrusted binaries.
+
+
+---
+---
+
+
+
+## 3.Hard Links & Soft Links
+
+- To understand hard links and soft links we first must learn some very basic things about filesystems.
+
+### 3.1 How a file is stored in filesystem?
+
+#### Inodes:
+```shell
+echo "Picture of Milo the dog" > Pictures/family_dog.jpg
+stat Pictures/family_dog.jpg
+```
+- Filesystems like xfs, ext4, and others, keep track of data with the help of inodes. - An inode is a filesystem data structure that stores metadata about a file (or directory) — everything except the filename and the file’s actual data blocks.
+
+- Our picture might have blocks of data scattered all over the disk, but the inode
+remembers where all the pieces are stored. It also keeps track of metadata. What an inode stores
+
+- __Owner / Group:__ UID and GID.
+- __Permissions:__ Read/write/execute bits and special bits (SUID/SGID/sticky).
+- __Timestamps:__ typically atime, mtime, ctime (and on some filesystems birth/creation time).
+- __Link count:__ number of hard links pointing to the inode.
+- __Size & block pointers:__ file size and pointers to the data blocks (or extents).
+- __File type & flags:__ regular file, directory, device, special attributes.
+- __Other:__ inode number, number of blocks used, filesystem-specific flags.
+
+#### Key concepts
+
+- __Filename vs inode:__ The directory entry maps a filename to an inode number. A file’s identity on disk is the inode; filenames are directory entries that reference it.
+- __Hard links:__ Multiple filenames (dir entries) can reference the same inode. The inode’s link count increases for each hard link. Removing a filename decrements the link count; the data is freed only when link count reaches 0 and no process has the file open.
+- __Symbolic links:__ A symlink is a separate file with its own inode that contains a path — it does not share the target’s inode.
+
+- __Per-filesystem:__ Inodes exist per filesystem and inode numbers are unique only within that filesystem. Filesystems allocate a fixed number (or ratio) of inodes when created — you can run out of inodes even if there is free disk space.
+
+```shell
+ls -i file.txt        # prints inode number before filename
+ls -li               # long listing including inode
+stat file.txt        # detailed info including inode on Linux
+#Find a file by inode:
+find /path -inum 123456 -print
+df -i               # shows used/available inodes per filesystem
+```
+
+### 3.2 Hard Links:
+
+```shell
+echo "Picture of Milo the dog" > Pictures/family_dog.jpg
+stat Pictures/family_dog.jpg
+```
+![hard_links_1](./images/hard_links_1.png)
+
+- When we create a file `family_dog.jpg` linux group all this file's data under inode 52946177. 
+- Data blocks and inode created then hardlink created for "family_dog.jpg" to Inode 52946177.
+
+#### why would we need more than one hard link for this data?
+
+- If we want to share `family_dog.jpg` file with other users within the same system, Instead of copying `/home/aaron/Pictures/family_dog.jpg` to `/home/jane/Pictures/family_dog.jpg`, we could hardlink it to `/home/jane/Pictures/family_dog.jpg`.
+
+![hard_links_2](./images/hard_links_2.png)
+
+- `ln path_to_target_file path_to_link_file`
+
+- The `target_file` is the file you want to link with. 
+- The `link_file` is simply the name of this new hard link we create. Technically, the hard link created at the destination is a file like any other. 
+- The only special thing about it is that instead of pointing to a new inode, it points to the same inode as the `target_file`.
+
+- __Now our picture is only stored once, but the same data can be accessed at different locations, through different filenames.__
+
+##### How delete happens with hard links?
+
+- if aaron deletes the family_dog.jpg then it will decrease link_count to 1, so jane still can access the file.
+- When there are 0 link_count, the data itself will disappear from the filesystem.
+- The beauty of this approach is that people that share hard links can freely delete what they want, without having a negative impact on other users that still need that
+information. 
+- But once everyone deletes their hard links to that data, the data itself will be deleted. 
+- Technically, the data blocks are not actually erased. They are just marked as unused, so the system can overwrite them with new data. 
+- But from the user's perspective the data is gone. So, it is "intelligently removed" only when EVERYONE involved decides they don't need it anymore.
+
+#### Limitations & Considerations:
+
+![hard_links_limits](./images/hard_links_limits.png)
+
+__Limitations of hard links:__
+
+- You can only hard link to files, not directories.
+- You can only hardl ink to files on the same filesystem. If you had an external drive mounted at /mnt/Backups, you would not be able to hard link a file from your SSD, at /home/aaron/file to some other file on /mnt/Backups since that's a different filesystem.
+- __Consideration when you hardlink:__
+- First, make sure that you have the proper permissions to create the link file at the destination. In our case, we need write permissions at: /home/jane/Pictures/.
+- Second, when you hardlink a file, make sure that all users involved have the required permissions to access that file. 
+- For Aaron and Jane, this might mean that we might have to add both their usernames to the same group, for example, "family". Then we'd use a command to let the group called "family" read and write to this file. 
+- You only need to change permissions on one of the hardlinks. That's because you are actually changing permissions stored by the Inode. So, once you change permissions at
+/home/aaron/Pictures/family_dog.jpg, /home/jane/Pictures/family_dog.jpg and all other hard links will show the same new sets of permissions.
+
+### 3.3 Soft Links
 
 - soft link is nothing but a software shortcut on the Windows Desktop. if you click on Chrome shortcut it will open `C:\Program Files (x86)\Google\Chrome\Application\chrome.exe` file
 - Desktop shortcut is a soft link to the `.exe` file
@@ -342,15 +534,95 @@ readlink path_to_soft_link
 - You may also notice that all permission bits, rwx (read, write, execute) seem to be enabled for this file. That's because the permissions of the soft link do not matter, the permissions of the destination file applies.
 - Broken links are displayed in RED color
 
-</details>
+---
+
+## 4.Searching
+
+### 4.1 search for files: find
+
+![search_find_1](./images/search_find_1.png)
+
+- For example to find a file named `file1.txt` in the directory `/bin` run the command.
+```shell
+# search inside current directory
+find –name file1.txt 
+# search inside /bin dir
+find /bin/ –name file1.txt
+# all files with prefix file
+find /bin/ –name file*.txt 
+#find all txt files
+find /bin/ –name *.txt
+
+```
+- `–name` is the search parameter used to specify the name of the file you are looking for.
+- You can sometimes skip specifying the path to the directory you want to search through. And when you do that it searches in the current directory.
+
+- "First I have to go there, then I will find it".
+- You have to enter your room, and only after you can search for your keys. This will remind you that you first have to specify the search location and then the search parameters.
+
+#### Search Params:
+
+![search_find_params](./images/search_find_params.png)
+
+- let's make it easier to understand. First, let's imagine the time is `12:05`.With `-mmin 5`, we'd see files created at exactly `12:01`, and not `12:00` as we'd expect. That's because, when we backtrack from the current time, we step through `12:05, 12:04, 12:03, 12:02`, and end up at `12:01`, exactly five values.
+
+- With `-mmin -5` we'd find files modified in the last 5 minutes. That means, files modified at `12:05, 12:04, 12:03, 12:02 and 12:01`. 12:00 not included, for the same reason as before. From 12:05 to 12:01 we have exactly five values. To 12:00, it would be six values, so we'd need to bump up -mmin to "-6" to also include that timestamp.
+
+- With `-mmin +5`, we'd see files created from 12:00, to 11:59, 11:58 and beyond (in the past). You might notice there's a twist this time. We see 12:00 here instead of 12:01. 
+- When you use a `+`, the count skips the current time. So it starts counting from 12:04 instead of 12:05. And we have five minutes from 12:04 to 12:00. 
+- So another way to think about this "find –mmin +5" command is that it shows us any object that was created more than 5 minutes ago. And 12:01 is not more than 5 minutes ago, but rather exactly 5 minutes ago. So more than five minutes is 12:00 or earlier.
+
+- Another similar option is `mtime`. But instead of working with minute units, it works with 24 hour units. `-mtime 0` matches what was modified in the last 24 hours. `-mtime 1` matches what was modified between 24 and 48 hours ago, and so on.
+
+![find_cmd_reference](./images/find_cmd_reference.png)
+##### [source](https://serveracademy.com/blog/linux-find-command/)
+
+#### Find by size:
+
+![find_by_size](./images/find_by_size.png)
+
+#### and, or, not operator expression
+
+![find_and_or_expr](./images/find_and_or_expr.png)
+
+- we want to find all files that do not begin with the letter f. To exclude files beginning with the letter f from our results, we woulduse the “-not” option before the “-name” option.
+
+
+![find_not_expr](./images/find_not_expr.png)
 
 ---
 
+#### find by permissions
 
-<details>
-<summary></summary>
-</details>
+- We can also search for files (or directories) based on their permissions.
+- We’ll use the “664” octal notation for our permissions. “664” means this set of permissions: user can read and write, group can read and write, others can read (u+rw,g+rw,o+r).
 
+
+![find_by_perm](./images/find_by_perm.png)
+
+
+![find_by_perm_2](./images/find_by_perm_2.png)
+
+- We want to find files which only the owner can read and write, and no other permissions are set. To do that we would run `find –perm 600`. This would match the files, “felix,” “james,” and “bob.”
+
+- To find files that the owner can execute, at least, but rest of permissions can be anything, we would run `find –perm -100`, which would match only “freya” and “jacob.”
+
+- Now, imagine we want to make sure that nobody else can read these files, except users and groups that own them. In this case, we use the NOT operator. To look for files that others can NOT read, we would run `find \! –perm –o=r`, which matches “felix,” “james,” “bob,” “freya,” “john,” and “bean.”
+
+- Finally, imagine we want to find files that can be read by either the user, or the group, or others 
+-- does not matter who it is -- but at least one of them should be able to read. To do this, we would run `find –perm /u=r,g=r,o=r`. In this case, all our files match the condition. If no one can read it, it won't show up in the results.
+
+##### References:
+1. https://serveracademy.com/blog/linux-find-command/
+
+
+
+
+---
+---
+
+
+## 5.Working with File Content: view, edit, transform, compare text files
 
 
 

@@ -11,5 +11,10 @@
 
 ### 1.2 Files and Directories 
 - [X] Intro to Files & Directories
-- [ ] File Permissions
-- [ ] Hard & Soft Links
+- [X] File Permissions
+- [X] Hard & Soft Links
+
+### 1.3 Search
+- [ ] search for files (find)
+- [ ] search file content(grep)
+
