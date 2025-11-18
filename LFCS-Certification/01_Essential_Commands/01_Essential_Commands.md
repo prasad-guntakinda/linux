@@ -267,26 +267,35 @@ stat family_dog.jpg
 
 ![octal_permissions](./images/octal_permissions.png)
 
-- Let’s take a closer look at this permission. We have rw for user, r for group and none set for others. Each permission is represented in binary. If it’s set the binary is set to 1 or else its set to 0. In this case the first part has 110, the second part is 100 and the third part is 0. Converting this binary to decimal would give us 6 for the first part, 4 for the second part, and 0 for the third part. Here’s a quick binary table for your reference.
-Let’s take another example. This time rwx r-x and r-x. So, the binary format would be 111, 101, 101. The decimal of which is 755.
+- Let’s take a closer look at this permission. We have `rw` for user, `r` for group and none set for others. 
+- Each permission is represented in binary. If it’s set the binary is set to 1 or else its set to 0. 
+- In this case the first part has `110`, the second part is `100` and the third part is `0`. 
+- Converting this binary to decimal would give us `6` for the first part, `4` for the second part, and `0` for the third part. 
+- Let’s take another example. This time `rwx r-x and r-x`. So, the binary format would be `111, 101, 101`. The decimal of which is `755`.
 
-In the last example it’s read write execute for all, so its 1 for all bits, and so the decimal value is 777.
+- In the last example it’s read write execute for all, so its 1 for all bits, and so the decimal value is 777.
 
 
-![alt text](image.png)
+![octal_permissions_2](./images/octal_permissions_2.png)
 
-if you find binary difficult another approach would be to use the octal table. It’s much simpler. For each permission assign an octal value. For example 4 for read, 2 for write and 1 for execute. Then whichever permission is set, consider the respective value for that and for the permission bit not set consider 0. Once done, add up numbers within each group. 4 + 2 = 6 and 4 + 0 + 0 is 4 and the last group is 0.
-Let’s look at using the same approach for the other examples as well. rwx r-x and r-x gives us 755
-and rwxrwxrwx gives us 777.
+- if you find binary difficult another approach would be to use the octal table. It’s much simpler. For each permission assign an octal value. 
+- For example `4` for read, `2` for write and `1` for execute. 
+- Then whichever permission is set, consider the respective value for that and for the permission bit not set consider 0. Once done, add up numbers within each group. `4 + 2 = 6` and 4 + 0 + 0 is 4 and the last group is 0.
+- Examples:
 
-and rwxrwxrwx gives us 777.
+        `rwxr-xr-x = 755
+         rwxrwxrwx=777
+        `
 
-![alt text](image-1.png)
+![octal_permissions_3](./images/octal_permissions_3.png)
 
-Once we identify the number we want to set to, we can use the same in chmod commands as well. Instead of specifying the permissions for each group, we could just provide a number like this.
+- Once we identify the number we want to set to, we can use the same in chmod commands as well. Instead of specifying the permissions for each group, we could just provide a number like this.
+
+```shell
 chmod 640 family_dog.jpg
-Well, that’s all for now, I will see you in the next one.
-
+# same as
+chmod u=rw-,g=r family_dog.jpg
+```
 
 ### Hard Links & Soft Links
 
