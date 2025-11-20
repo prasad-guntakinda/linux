@@ -612,6 +612,48 @@ find /bin/ –name *.txt
 - Finally, imagine we want to find files that can be read by either the user, or the group, or others 
 -- does not matter who it is -- but at least one of them should be able to read. To do this, we would run `find –perm /u=r,g=r,o=r`. In this case, all our files match the condition. If no one can read it, it won't show up in the results.
 
+<details>
+
+<summary>why find is not working? </summary>
+
+- The find command is designed to search recursively into subdirectories by default, starting from the specified path. If find is not searching inside subdirectories as expected, several factors could be at play: 
+__1. Incorrect Path Specification:__
+
+• Missing or Incorrect Starting Point: The find command requires a starting directory. If you want to search the current directory and its subdirectories, you must specify . (dot) as the starting point. For example: 
+
+    find . -name "filename.txt"
+
+To search from the root directory, use /. 
+__2. Shell Globbing Interference:__ 
+
+• Unquoted Wildcards: If you use wildcards (like *) in your -name or -iname arguments without quoting them, the shell might expand the wildcard before passing the argument to find. This means find receives a list of existing files in the current directory, not the wildcard pattern itself, leading to a non-recursive search. 
+```shell
+    # Incorrect (shell expands *.java)
+    find . -name *.java 
+
+    # Correct (quotes prevent shell expansion)
+    find . -name "*.java" 
+```
+
+__3. Permissions Issues:__
+
+• Insufficient Directory Permissions: find needs read (r) and execute (x) permissions on directories to traverse them and list their contents. If you lack these permissions for a particular subdirectory, find will not be able to enter it and search for files within. 
+
+__4. Symbolic Link Handling:__ 
+
+• Not Following Symbolic Links: By default, find does not follow symbolic links to directories. If the subdirectories you expect to be searched are actually symbolic links, find will skip them unless you explicitly tell it to follow them using the -L option. 
+
+    find -L . -name "target_file.txt"
+
+__5. Depth Restrictions:__ 
+
+• maxdepth or mindepth Options: If you have used the -maxdepth or -mindepth options, you might be unintentionally limiting the search depth, preventing find from reaching certain subdirectories. Review your command for these options and adjust them as needed. 
+
+By carefully checking these points, you can often identify and resolve why find might not be searching inside subdirectories as you intend. 
+
+</details>
+
+
 ##### References:
 1. https://serveracademy.com/blog/linux-find-command/
 
@@ -622,8 +664,9 @@ find /bin/ –name *.txt
 ---
 
 
-## 5.Working with File Content: view, edit, transform, compare text files
+## 5. File Content Commands — grouped quick reference
 
+Printable cheatsheet: [File Content Commands Cheatsheet](./file_content_cheatsheet.md)
 
 
 ## FAQs
