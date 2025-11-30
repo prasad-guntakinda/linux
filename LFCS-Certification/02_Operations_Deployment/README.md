@@ -50,7 +50,6 @@ sudo shutdown -k +10 "Maintenance starts in 10 minutes (test only)"
 # using wall command. warning only
 echo "Heads up: quick maintenance in 15 minutes" | sudo wall
 ````
-
 ---
 
 ### boot system into different operation modes
@@ -808,4 +807,147 @@ We get a message if there are errors. But if it's correct, we get no message.
 
 ## 7. Package Manager:
 
+
+---
+
+## RHEL Package Management: RPM, Repositories, YUM & DNF
+
+This section explains core concepts of package management on RHEL-like systems: RPM packages, repositories, and the high-level tools `yum` and `dnf` used to install, update and manage packages.
+
+### Key concepts
+- **RPM (Red Hat Package Manager)**: the low-level package format and tool (`rpm`) used to query, install, upgrade and remove .rpm packages. An RPM contains metadata, the packaged files, and optional scripts (pre/post install or remove).
+- **Repository (repo)**: a collection of packages plus metadata which package managers (yum/dnf) use to resolve dependencies and install/upgrade software. Repo definitions live under `/etc/yum.repos.d/*.repo` and include base URL, enabled/disabled flags, GPG key info, etc.
+- **YUM / DNF**: high-level package managers that handle dependency resolution, transaction history, and repository metadata. `dnf` is the modern replacement for `yum` (RHEL 8+ uses `dnf` under the hood).
+- **Subscription / Content access**: RHEL systems often use `subscription-manager` to register systems and enable Red Hat repositories (or use Red Hat Satellite for offline/content management).
+- **Modules & Streams (AppStream / Module streams)**: starting RHEL 8, packages may be grouped into modules with different streams (versions) — managed with `dnf module` commands.
+
+### How repo downloads the latest package?
+
+- A repository (repo) is a collection of packages plus metadata (package lists, versions, file lists, checksums) exposed by a URL or mirror; package managers (yum/dnf) use that metadata to find and download packages and resolve dependencies.
+- A package (RPM on RHEL systems) is a single distributable unit (files + metadata + scripts + signature).
+- When you ask the package manager to install or update, it consults repo metadata (repomd.xml / primary.xml), picks the highest-version RPM that satisfies dependency rules (RPM epoch:version-release comparison), downloads the .rpm files and any dependencies, verifies signatures, then performs the transaction.
+
+### RPM vs package manager
+- `rpm` operates on single `.rpm` files and cannot resolve dependencies automatically. Use it for querying and low-level operations:
+    - `rpm -qa` (list installed packages)
+    - `rpm -qi <pkg>` (package info)
+    - `rpm -ql <pkg>` (list package files)
+    - `rpm -qf <file>` (which package owns a file)
+    - `rpm -e <pkg>` (erase/remove)
+    - `rpm -Uvh package.rpm` (install or upgrade local rpm)
+    - `rpm --checksig package.rpm` (verify GPG signature)
+
+- Prefer `yum`/`dnf` for installing packages from repos (they resolve dependencies and record transactions).
+
+### Common YUM/DNF commands (examples)
+- List configured repositories:
+    ```bash
+    dnf repolist all
+    yum repolist all
+    ```
+- Search and list packages:
+    ```bash
+    dnf search nginx
+    dnf list available nginx
+    yum search nginx
+    ```
+- Install / update / remove:
+    ```bash
+    sudo dnf install nginx
+    sudo dnf remove nginx
+    sudo dnf update   # update all installed packages
+    sudo dnf upgrade  # alias to update on many systems
+    ```
+- Group and module operations:
+    ```bash
+    # module list (RHEL8+)
+    dnf module list
+    dnf module enable nodejs:14
+    dnf module install nodejs:14
+
+    # package groups
+    dnf group list
+    sudo dnf groupinstall "Development Tools"
+    ```
+- Repo management and caching:
+    ```bash
+    sudo dnf makecache    # refresh metadata cache
+    sudo yum clean all    # clean yum cache
+    sudo yum-config-manager --enable epel
+    ```
+
+### Repository configuration
+- Repo files: `/etc/yum.repos.d/*.repo` contain sections with `name=`, `baseurl=`, `enabled=`, `gpgcheck=` and `gpgkey=`. Example:
+    ```ini
+    [example-repo]
+    name=Example Repo
+    baseurl=https://repos.example.com/rhel/$releasever/$basearch/
+    enabled=1
+    gpgcheck=1
+    gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-example
+    ```
+- Enable/disable repos: `dnf config-manager --set-enabled` or `yum-config-manager` (requires `yum-utils`).
+
+### GPG signing and verification
+- Packages in official repos are GPG-signed. `gpgcheck=1` verifies signatures using keys listed in `gpgkey=`. Import vendor keys with:
+    ```bash
+    sudo rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+    ```
+- `rpm --checksig package.rpm` checks signature on a local file.
+
+### Transaction history & rollback
+- `yum`/`dnf` record transaction history. Useful commands:
+    ```bash
+    sudo dnf history list
+    sudo dnf history info <id>
+    sudo dnf history undo <id>   # attempt to undo a transaction
+    ```
+- Note: rollback support depends on available packages and metadata; test carefully before relying on undo for production rollbacks.
+
+### Creating & using local repositories
+- Create a local repo from a directory of RPMs using `createrepo`/`createrepo_c` and serve via HTTP, NFS, or file://.
+    ```bash
+    sudo dnf install createrepo_c
+    createrepo_c /srv/repos/myrepo
+    # create repo file pointing to file:///srv/repos/myrepo or http://localhost/repos/myrepo
+    ```
+- Useful for air-gapped environments or internal package hosting.
+
+### Useful RPM/DNF diagnostics
+- Check why a package was installed and by which package:
+    ```bash
+    rpm -q --whatprovides <name>
+    rpm -q --whatrequires <pkg>
+    rpm -qa | grep <name>
+    ```
+- Verify installed package files (integrity):
+    ```bash
+    rpm -V <pkg>
+    ```
+- Check for obsolete or available updates from repos:
+    ```bash
+    dnf check-update
+    yum check-update
+    ```
+
+### Security updates & advisories
+- RHEL provides security advisories; on `dnf` you can filter by security
+    ```bash
+    sudo dnf update --security    # apply only security updates (metadata dependent)
+    ```
+- Use `yum-plugin-security` or repository metadata to detect CVEs; Red Hat customers use `subscription-manager` and tools like `yum updateinfo`.
+
+### Packaging and building (brief)
+- RPMs are built from a `.spec` file using `rpmbuild`. Source RPMs (SRPMs) contain sources and spec.
+- Common build layout: `~/rpmbuild/SOURCES`, `SPECS`, `BUILD`, `RPMS`, `SRPMS`.
+- `rpmbuild -ba package.spec` builds binary and source RPMs.
+
+### Best practices
+- Use `dnf`/`yum` for routine installs and updates (dependency resolution, transaction history).
+- Do not manually edit `/usr/lib` packaged unit files — use repos and `/etc/yum.repos.d/` for repo config.
+- Prefer `dnf` modules to pick a stream (version) of software on RHEL 8+.
+- Keep GPG checking enabled to ensure package integrity.
+- In production, test updates in a staging environment and use Red Hat Satellite or a local mirror for controlled rollouts.
+
+---
 
