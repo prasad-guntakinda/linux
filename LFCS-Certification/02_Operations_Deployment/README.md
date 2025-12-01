@@ -67,6 +67,20 @@ sudo systemctl isolate graphical.target
 
 ````
 
+ systemd targets: 
+
+| Target  | Description | Use Case  |
+| --- | --- | --- |
+| ``graphical.target`` | Boots into a full graphical desktop environment. | Standard desktop usage.  |
+| ``multi-user.target`` | Boots into a text-based environment with network services, but no GUI. | Servers or other systems that don't require a graphical interface.  |
+| ``rescue.target`` | Loads a minimal set of services with a root shell. | For administrative tasks and maintenance in a minimal environment.  |
+| ``emergency.target`` | Boots with only the most basic system services and a read-only root filesystem. | Critical troubleshooting when standard and rescue modes fail.  |
+
+
+
+
+
+
 ## 2.Scripting to Automate the Tasks
 - When we log into a Linux operating system, we're automatically dropped at a command line.
 - After successful log in, a program called Bash opens up. 
