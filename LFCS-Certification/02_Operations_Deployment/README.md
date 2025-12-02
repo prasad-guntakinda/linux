@@ -69,12 +69,12 @@ sudo systemctl isolate graphical.target
 
  systemd targets: 
 
-| Target  | Description | Use Case  |
-| --- | --- | --- |
-| ``graphical.target`` | Boots into a full graphical desktop environment. | Standard desktop usage.  |
-| ``multi-user.target`` | Boots into a text-based environment with network services, but no GUI. | Servers or other systems that don't require a graphical interface.  |
-| ``rescue.target`` | Loads a minimal set of services with a root shell. | For administrative tasks and maintenance in a minimal environment.  |
-| ``emergency.target`` | Boots with only the most basic system services and a read-only root filesystem. | Critical troubleshooting when standard and rescue modes fail.  |
+| Target                | Description                                                                     | Use Case                                                           |
+| --------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| ``graphical.target``  | Boots into a full graphical desktop environment.                                | Standard desktop usage.                                            |
+| ``multi-user.target`` | Boots into a text-based environment with network services, but no GUI.          | Servers or other systems that don't require a graphical interface. |
+| ``rescue.target``     | Loads a minimal set of services with a root shell.                              | For administrative tasks and maintenance in a minimal environment. |
+| ``emergency.target``  | Boots with only the most basic system services and a read-only root filesystem. | Critical troubleshooting when standard and rescue modes fail.      |
 
 
 
@@ -694,6 +694,16 @@ grep -r 'nginx' /var/log
 
 ## 6. Schedule Tasks: cron, anacron, at 
 
+- If cron, anacron not installed use below commands to install it
+
+````bash
+ # find cron functionlity packages
+ sudo dnf search cron*
+ # for RHEL based OS package is cronie
+ sudo dnf install cronie
+ sudo systemctl start crond
+ sudo systemctl enable crond
+````
 - On servers, we'll sometimes need to set up some tasks to run automatically. For example, we could create a job that automatically backs up the database, next, or every Sunday at 3 AM.
 - There are 3 utility tools to do this:
     1. cron
@@ -712,6 +722,17 @@ execute it, no matter when the system is powered on.
 - Now for the **at** utility. We saw that cron and anacron are focused on repetitive automated tasks. In contrast, **at** is focused on tasks that should only run once.
 
 ### cron:
+
+````bash
+* * * * * /path/to/your/command_or_script
+````
+### Explanation of the fields:
+- First asterisk (*): Represents the minute field (0-59). An asterisk here means "every minute."
+- Second asterisk (*): Represents the hour field (0-23). An asterisk here means "every hour."
+- Third asterisk (*): Represents the day of the month field (1-31). An asterisk here means "every day of the month."
+- Fourth asterisk (*): Represents the month field (1-12). An asterisk here means "every month."
+- Fifth asterisk (*): Represents the day of the week field (0-7, where 0 and 7 are Sunday). An asterisk here means "every day of the week." 
+- ``/path/to/your/command_or_script``: This is the full path to the command or script you want to execute.
 
 ![cron_syntax](./images/cron_syntax.png)
 
@@ -779,6 +800,10 @@ sudo rm /etc/cron.hourly/shellscript
 ````
 
 ### anacron:
+
+
+![anacron_syntax](./images/anacron_syntax.png)
+
 - "anacron" might not be installed by default
 - When using anacron, we don't really care at what time the job will run. We just want it to run daily, monthly, or once every few days, no matter the time of the day.
 - To schedule a job with anacron, we edit the /etc/anacrontab file:
@@ -965,3 +990,4 @@ This section explains core concepts of package management on RHEL-like systems: 
 
 ---
 
+## 8.
