@@ -990,4 +990,93 @@ This section explains core concepts of package management on RHEL-like systems: 
 
 ---
 
-## 8.
+## 8. Availability of Resources:
+
+### Server disk utilization
+- As time goes by, a server will usually use more and more resources. Storage space is a good example.
+- how do we know when we are runningout of storage space? 
+- We can use the df(disk free) utility.
+
+![`df_command`](./images/df_command.png)
+- Reading df output:
+- We can ignore the filesystems that contain the word tmpfs.Those are virtual filesystems that only exist in the computers' memory, not on the storage devices.
+- In our case, we see we have two real filesystems. The one Mounted on ``/`` is the root filesystem, where our Linux operating system is installed. The one mounted on`` /boot`` is a small filesystem where boot files are installed.
+
+- To see how much disk space a specific directory is using, we can use the ``du`` (disk usage) utility:
+````bash
+du -sh /usr/
+du -sh /home/prasad/
+````
+
+### RAM utilization:
+
+### free cmd:
+
+![free_cmd](./images/free_cmd.png)
+
+### Processor Utilization:
+
+#### uptime:
+- With the uptime command we can see how the CPU cores were used by programs running on our server.
+-  uptime  gives a one line display of the following information.  The current time, how long the system has been running, how many users are currently logged on, and the system load averages for the past 1, 5, and 15 minutes.
+-  Now let's say we have 8 CPU cores on this system. And we see this load average:
+``6.00 0.31 0.18``
+- This would mean that 6 CPU cores were used intensely in the last minute. But in the last 5 and 15 minutes, the CPU cores were barely used. So, it's just something that happened recently. Some programs worked hard to do something, for a very brief time. But, overall, the system is not pushing the CPU too much, so we shouldn't be too concerned.
+- If we need to see some details about the CPU used on this system, we can run: `lscpu`
+- And if we need to see some details about other hardware on this system, we can type: `lspci`
+
+### File System:
+
+![filesystems](./images/filesystems.png)
+
+- Now let's jump to the integrity of filesystems. To check a filesystem for errors, we first must unmount it, in case it is mounted. We'll learn more about filesystems, partitions, mounting and unmounting in the Storage section of this course.
+- To verify an XFS filesystem, we would use a command like this:
+````bash
+sudo xfs_repair -v /dev/vdb1
+````
+- /dev/vdb1 points to the partition where this filesystem is stored on. In this case, it points to the first partition on the second virtual storage device
+
+---
+---
+
+
+## Change Runtime Kernel Parameters:
+
+
+
+---
+---
+
+## SELinux:
+
+
+
+
+---
+---
+
+## Create and Manage Containers:
+
+### Example of why containers are so popular?
+
+![container_demo_1](./images/container_demo_1.png)
+
+- We install it with a ``sudo apt install mariadb-server`` command. Then we configure its settings by modifying files in the ``/etc/mysql/`` directory. We create a few databases, we configure database users, assign privileges, and so on.
+
+
+![container_demo_2](container_demo_2.png)
+
+- Let's say we're happy with our setup and we want to move it to a more powerful computer, somewhere in the cloud. The problem is that all of its components are scattered all over the place. The settings for MariaDB are in one directory. The databases are in some other directory, logs in another one. Gathering and migrating all of these things can be a hassle.
+
+- But what if our MariaDB setup would have been created in a Docker container instead? Now everything would exist inside this container: the daemon, the configuration files, the logs, the databases. All we would need to do is copy this container to some other computer and everything will work exactly the same as it did before.
+
+![container_demo_3](./images/container_demo_3.png)
+
+- Containers encapsulate applications. It makes them portable, easy to move around. As easy as copy/pasting a file from one location to another. Furthermore, we can clone this container 100 times, and move it to 100 different locations if we want to.
+- Once we're happy with a containerized application, we can deploy it to tens of different servers, at scale. The same thing that Kubernetes does, and part of the reason why it's so popular.
+
+### Example: nginx in docker
+
+
+---
+---
