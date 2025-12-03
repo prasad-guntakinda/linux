@@ -805,12 +805,7 @@ We get a message if there are errors. But if it's correct, we get no message.
 - As mentioned in the intro, cronand anacronare meant to run jobs that repeat periodically. But the utility called "at" is used to schedule jobs that only need to run once.
 
 
-## 7. Package Manager:
-
-
----
-
-## RHEL Package Management: RPM, Repositories, YUM & DNF
+## 7. RHEL Package Management: RPM, Repositories, YUM & DNF
 
 This section explains core concepts of package management on RHEL-like systems: RPM packages, repositories, and the high-level tools `yum` and `dnf` used to install, update and manage packages.
 
@@ -951,3 +946,69 @@ This section explains core concepts of package management on RHEL-like systems: 
 
 ---
 
+## 8. Change Kernel Runtime Parameters: sysctl
+
+### how to change both persistent, and non-persistent runtime parameters for the Linux kernel?
+
+#### Non-Persistent: changing by using the sysctl command
+![kernel_runtime_params](./images/kernel_runtime_params.png)
+
+- "Kernel runtime parameters" is just a fancy term for what are basically settings for how the Linux kernel does its job, internally. Since the kernel deals with low-level stuff like allocating memory, handling network traffic, and so on, most of these settings revolve around such kinds of things.
+
+- To see all kernel runtime parameters currently in use, enter this command: ``sysctl-a``
+
+- Let's take a look at a parameter and its value.
+
+```bash
+    net.ipv6.conf.default.disable_ipv6 = 0
+```
+
+- This naming convention makes it quite easy to figure out what the parameter does. Everything that starts with `net`. is some kind of network-related parameter. 
+- Memoryrelated stuff will start with vm. (virtual memory). 
+- Filesystem settings in the Linux kernel start with fs.
+- `0` basically means "false" and  `1` means "true". 
+- To make it disable this, we would need to set it to 1. And to set the value of this paremeter, we can use this command:
+```bash
+# set the value
+sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+# To check the current value for a parameter, sysctl <param_name>
+sysctl net.ipv6.conf.default.disable_ipv6
+```
+- `-w` is the option to write a value to a parameter. __Make sure there is no space before or after the = sign.__
+- But __this is a non-persistent change__ to the parameter. It will be active from now on, if our operating system continues to run. But as soon as we reboot it, `net.ipv6.conf.default.disable_ipv6` will be set to zero once again, its default value. 
+- So a non-persistent change like we did here does not survive across reboots.
+
+#### Persistent:
+
+- We can add a file to the `/etc/sysctl.d/` directory. But it's important to remember that this file has to end with the `.conf` extension
+
+![kernel_runtime_params_2](./images/kernel_runtime_params_2.png)
+
+- __Swapping__: A technique called "swapping" can move data from memory to a storage device like an SSD. This can temporarily free up some memory so it can be used by other programs.
+```bash
+# to get only vm related params
+sysctl -a | grep vm
+# change swapiness value persistent style
+
+
+```
+
+- First, we should create a `.conf` file in `/etc/sysctl.d/`. We can give the file any name we
+want. We'll call it "swap-less" to indicate to other possible administrators of this system that we made this `.conf` file to make our system swap less often.
+- So we'll run a command like:
+```bash
+sudo vim /etc/sysctl.d/swap-less.conf
+#And in this file we simply add this content:
+vm.swappiness=20
+```
+- Now, every time our Linux operating system boots, this parameter will be set to the value of 20.
+- If we want to make Linux immediately adjust parameters, in the way we defined
+them in our file, we should also run this command:
+
+```bash
+# load config file to read persistent params
+sudo sysctl -p /etc/sysctl.d/swap-less.conf
+```
+
+- we can even edit this changes in `/etc/sysctl.conf` file, but this file can be accidentally overwritten when upgrading the operating system. So if you intend to make persistent changes of your own, place them
+in the `/etc/sysctl.d/` directory instead.
