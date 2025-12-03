@@ -67,6 +67,20 @@ sudo systemctl isolate graphical.target
 
 ````
 
+ systemd targets: 
+
+| Target                | Description                                                                     | Use Case                                                           |
+| --------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| ``graphical.target``  | Boots into a full graphical desktop environment.                                | Standard desktop usage.                                            |
+| ``multi-user.target`` | Boots into a text-based environment with network services, but no GUI.          | Servers or other systems that don't require a graphical interface. |
+| ``rescue.target``     | Loads a minimal set of services with a root shell.                              | For administrative tasks and maintenance in a minimal environment. |
+| ``emergency.target``  | Boots with only the most basic system services and a read-only root filesystem. | Critical troubleshooting when standard and rescue modes fail.      |
+
+
+
+
+
+
 ## 2.Scripting to Automate the Tasks
 - When we log into a Linux operating system, we're automatically dropped at a command line.
 - After successful log in, a program called Bash opens up. 
@@ -680,6 +694,16 @@ grep -r 'nginx' /var/log
 
 ## 6. Schedule Tasks: cron, anacron, at 
 
+- If cron, anacron not installed use below commands to install it
+
+````bash
+ # find cron functionlity packages
+ sudo dnf search cron*
+ # for RHEL based OS package is cronie
+ sudo dnf install cronie
+ sudo systemctl start crond
+ sudo systemctl enable crond
+````
 - On servers, we'll sometimes need to set up some tasks to run automatically. For example, we could create a job that automatically backs up the database, next, or every Sunday at 3 AM.
 - There are 3 utility tools to do this:
     1. cron
@@ -698,6 +722,17 @@ execute it, no matter when the system is powered on.
 - Now for the **at** utility. We saw that cron and anacron are focused on repetitive automated tasks. In contrast, **at** is focused on tasks that should only run once.
 
 ### cron:
+
+````bash
+* * * * * /path/to/your/command_or_script
+````
+### Explanation of the fields:
+- First asterisk (*): Represents the minute field (0-59). An asterisk here means "every minute."
+- Second asterisk (*): Represents the hour field (0-23). An asterisk here means "every hour."
+- Third asterisk (*): Represents the day of the month field (1-31). An asterisk here means "every day of the month."
+- Fourth asterisk (*): Represents the month field (1-12). An asterisk here means "every month."
+- Fifth asterisk (*): Represents the day of the week field (0-7, where 0 and 7 are Sunday). An asterisk here means "every day of the week." 
+- ``/path/to/your/command_or_script``: This is the full path to the command or script you want to execute.
 
 ![cron_syntax](./images/cron_syntax.png)
 
@@ -765,6 +800,10 @@ sudo rm /etc/cron.hourly/shellscript
 ````
 
 ### anacron:
+
+
+![anacron_syntax](./images/anacron_syntax.png)
+
 - "anacron" might not be installed by default
 - When using anacron, we don't really care at what time the job will run. We just want it to run daily, monthly, or once every few days, no matter the time of the day.
 - To schedule a job with anacron, we edit the /etc/anacrontab file:
@@ -946,7 +985,57 @@ This section explains core concepts of package management on RHEL-like systems: 
 
 ---
 
-## 8. Change Kernel Runtime Parameters: sysctl
+## 8. Availability of Resources:
+
+### Server disk utilization
+- As time goes by, a server will usually use more and more resources. Storage space is a good example.
+- how do we know when we are runningout of storage space? 
+- We can use the df(disk free) utility.
+
+![`df_command`](./images/df_command.png)
+- Reading df output:
+- We can ignore the filesystems that contain the word tmpfs.Those are virtual filesystems that only exist in the computers' memory, not on the storage devices.
+- In our case, we see we have two real filesystems. The one Mounted on ``/`` is the root filesystem, where our Linux operating system is installed. The one mounted on`` /boot`` is a small filesystem where boot files are installed.
+
+- To see how much disk space a specific directory is using, we can use the ``du`` (disk usage) utility:
+````bash
+du -sh /usr/
+du -sh /home/prasad/
+````
+
+### RAM utilization:
+
+### free cmd:
+
+![free_cmd](./images/free_cmd.png)
+
+### Processor Utilization:
+
+#### uptime:
+- With the uptime command we can see how the CPU cores were used by programs running on our server.
+-  uptime  gives a one line display of the following information.  The current time, how long the system has been running, how many users are currently logged on, and the system load averages for the past 1, 5, and 15 minutes.
+-  Now let's say we have 8 CPU cores on this system. And we see this load average:
+``6.00 0.31 0.18``
+- This would mean that 6 CPU cores were used intensely in the last minute. But in the last 5 and 15 minutes, the CPU cores were barely used. So, it's just something that happened recently. Some programs worked hard to do something, for a very brief time. But, overall, the system is not pushing the CPU too much, so we shouldn't be too concerned.
+- If we need to see some details about the CPU used on this system, we can run: `lscpu`
+- And if we need to see some details about other hardware on this system, we can type: `lspci`
+
+### File System:
+
+![filesystems](./images/filesystems.png)
+
+- Now let's jump to the integrity of filesystems. To check a filesystem for errors, we first must unmount it, in case it is mounted. We'll learn more about filesystems, partitions, mounting and unmounting in the Storage section of this course.
+- To verify an XFS filesystem, we would use a command like this:
+````bash
+sudo xfs_repair -v /dev/vdb1
+````
+- /dev/vdb1 points to the partition where this filesystem is stored on. In this case, it points to the first partition on the second virtual storage device
+
+---
+---
+
+
+## 9. Change Kernel Runtime Parameters: sysctl
 
 ### how to change both persistent, and non-persistent runtime parameters for the Linux kernel?
 
@@ -1012,3 +1101,40 @@ sudo sysctl -p /etc/sysctl.d/swap-less.conf
 
 - we can even edit this changes in `/etc/sysctl.conf` file, but this file can be accidentally overwritten when upgrading the operating system. So if you intend to make persistent changes of your own, place them
 in the `/etc/sysctl.d/` directory instead.
+
+
+---
+---
+
+## 10. SELinux:
+
+
+
+
+---
+---
+
+## 12. Create and Manage Containers:
+
+### Example of why containers are so popular?
+
+![container_demo_1](./images/container_demo_1.png)
+
+- We install it with a ``sudo apt install mariadb-server`` command. Then we configure its settings by modifying files in the ``/etc/mysql/`` directory. We create a few databases, we configure database users, assign privileges, and so on.
+
+
+![container_demo_2](container_demo_2.png)
+
+- Let's say we're happy with our setup and we want to move it to a more powerful computer, somewhere in the cloud. The problem is that all of its components are scattered all over the place. The settings for MariaDB are in one directory. The databases are in some other directory, logs in another one. Gathering and migrating all of these things can be a hassle.
+
+- But what if our MariaDB setup would have been created in a Docker container instead? Now everything would exist inside this container: the daemon, the configuration files, the logs, the databases. All we would need to do is copy this container to some other computer and everything will work exactly the same as it did before.
+
+![container_demo_3](./images/container_demo_3.png)
+
+- Containers encapsulate applications. It makes them portable, easy to move around. As easy as copy/pasting a file from one location to another. Furthermore, we can clone this container 100 times, and move it to 100 different locations if we want to.
+- Once we're happy with a containerized application, we can deploy it to tens of different servers, at scale. The same thing that Kubernetes does, and part of the reason why it's so popular.
+
+### Example: nginx in docker
+
+
+---

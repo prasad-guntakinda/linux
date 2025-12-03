@@ -128,3 +128,200 @@ This command redirects the output to a file named ``nohup.out`` by default, prev
 
 ---
 
+<details>
+<summary> What is mount & unmount in linux?</summary>
+
+Below is the **GitHub-friendly Markdown version** of the explanation for **mount and unmount in Linux filesystems** — clean, structured, and ready for your notes or GitHub repo.
+
+---
+
+# **Mount and Unmount in Linux Filesystems**
+
+In Linux, **mounting** and **unmounting** are essential operations for making storage devices usable.
+
+---
+
+## 🟦 What is *Mounting*?
+
+**Mounting** means:
+
+> Attaching a filesystem (disk/partition/USB) to a directory so that its contents become accessible.
+
+Linux does **not** use drive letters (like C:, D:).
+Instead, everything is placed inside a **single directory tree** starting at `/`.
+
+### ✔ Example — Mount a device
+
+```bash
+mount /dev/sdb1 /mnt/data
+```
+
+Now all files inside `/dev/sdb1` become available under `/mnt/data`.
+
+### ✔ Any directory can be used as a mount point:
+
+* `/mnt`
+* `/media`
+* `/data`
+* `/backup`
+* `/opt/disk1`
+
+---
+
+## 🟥 What is *Unmounting*?
+
+**Unmounting** means:
+
+> Safely detaching a filesystem so the device can be removed or checked.
+
+### ✔ Example — Unmount a device
+
+```bash
+umount /mnt/data
+```
+
+or
+
+```bash
+umount /dev/sdb1
+```
+
+### ❗ If device is busy:
+
+```bash
+umount: /mnt/data: target is busy
+```
+
+Check what is using it:
+
+```bash
+lsof /mnt/data
+fuser -vm /mnt/data
+```
+
+---
+
+## 🟨 Why Mounting/Unmounting Is Needed?
+
+Linux requires mounting because:
+
+* It has **one unified filesystem tree**
+* Devices are **not automatically attached**
+* Mounting tells Linux where the filesystem should appear
+
+---
+
+## 🟩 Devices That Need Mounting
+
+| Device Type              | Examples                 |
+| ------------------------ | ------------------------ |
+| Hard disk partitions     | `/dev/sda1`, `/dev/sdb2` |
+| USB drives               | `/dev/sdc1`              |
+| LVM logical volumes      | `/dev/vg/data`           |
+| ISO images               | `image.iso`              |
+| Network shares (NFS/SMB) | `192.168.1.10:/share`    |
+
+---
+
+## 🟪 Mounting Different Filesystem Types
+
+### Mount EXT4
+
+```bash
+mount -t ext4 /dev/sdb1 /mnt
+```
+
+### Mount XFS
+
+```bash
+mount -t xfs /dev/sdb1 /mnt
+```
+
+### Mount ISO file
+
+```bash
+mount -o loop my.iso /mnt/iso
+```
+
+### Mount NFS share
+
+```bash
+mount -t nfs 192.168.10.50:/data /mnt/nfs
+```
+
+---
+
+## 🟫 Persistent Mounting (Auto-mount on Boot)
+
+Add to `/etc/fstab`:
+
+```
+/dev/sdb1   /data   xfs   defaults   0 0
+```
+
+Apply:
+
+```bash
+mount -a
+```
+
+---
+
+## 🔧 Check What Is Currently Mounted
+
+### All mounted devices:
+
+```bash
+mount
+```
+
+### Modern way (recommended):
+
+```bash
+findmnt
+```
+
+### Disk usage + mount points:
+
+```bash
+df -h
+```
+
+---
+
+## 🧪 Summary
+
+### ✔ `mount`
+
+Attach a filesystem to a directory.
+
+### ✔ `umount`
+
+Detach a filesystem safely.
+
+### ✔ Commonly used for:
+
+* disks
+* partitions
+* USB drives
+* LVM volumes
+* ISO images
+* network shares
+
+### ✔ Persistent mounting handled via:
+
+`/etc/fstab`
+
+---
+
+If you'd like, I can turn this into:
+
+📘 A **Mount & Filesystem Cheat Sheet PDF**
+🧪 A **practice set for LFCS filesystem tasks**
+
+Just tell me!
+
+</details>
+
+---
+
