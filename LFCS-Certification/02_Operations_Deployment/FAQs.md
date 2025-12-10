@@ -325,3 +325,57 @@ Just tell me!
 
 ---
 
+<details>
+<summary>Difference b/w DAC vs MAC</summary>
+
+
+The main difference is that Discretionary Access Control (DAC) allows resource owners to control access based on ownership, while Mandatory Access Control (MAC) enforces access based on system-wide, administrator-defined security policies and user security labels. DAC is flexible and user-friendly but less secure, whereas MAC is more rigid, highly secure, and typically used in environments with strict security needs like government and military. [1]  
+
+| Feature [1] | Discretionary Access Control (DAC) | Mandatory Access Control (MAC)  |
+| --- | --- | --- |
+| Control | Decentralized; users decide who can access resources they own. | Centralized; administrators and the system define and enforce policies.  |
+| Basis for access | User identity and ownership. | System-defined security labels, clearances, and policies.  |
+| Security Level | Lower. | Higher.  |
+| Flexibility | High; users can change permissions freely. | Low; rigid and based on strict rules.  |
+| Implementation | Easier to implement and maintain. | More difficult and complex to implement.  |
+| Use Case | Standard user-facing systems like file systems and social networks. | High-security systems, such as military, government, and intelligence.  |
+
+
+
+## DAC:
+In Linux, discretionary access control (DAC) means that the owner of a file or resource has the discretion to decide who can access it and what permissions they have (read, write, execute). This decentralized model is the traditional, default security model in Linux, managed using commands like chmod and chown. While flexible, it offers minimal protection against malware or misconfigurations since a process running as a user has all the same permissions as that user. [1, 2, 3, 4, 5, 6, 7]  
+How it works in Linux 
+
+• Ownership: Every file and directory has an owner (a specific user) and a group owner. 
+• Permissions: The owner can set permissions for three categories of users: the user who owns the file, members of the file's group, and everyone else. 
+• Levels of access: The permissions available for each category are: 
+
+	• Read: The ability to view the file's contents. 
+	• Write: The ability to modify or delete the file. 
+	• Execute: The ability to run the file as a program. 
+
+• Control mechanism: The  command is used to change these permissions, while  is used to change the owner of a file. [2, 3, 5, 7, 8]  
+
+Example 
+
+• A user can create a text file, and as its owner, they can grant a colleague read-only access while denying it to others. 
+• The owner can also give another user write permission, allowing them to edit the file. [2]  
+
+Limitations 
+
+• DAC can be less secure because it relies on user discretion. If a user grants too many permissions, or if malware running with that user's privileges is executed, it can lead to a security breach. 
+• It is difficult to enforce a strict, system-wide security policy with DAC alone, and it offers less granular control than other models like Mandatory Access Control (MAC). 
+
+
+---
+
+## MAC:
+Mandatory Access Control (MAC) is a security model that restricts access to system resources based on predefined, system-wide security policies, not on the discretion of individual users. In a MAC system, every user and every resource has a security label, and a user's clearance level (label) determines whether they can access a resource based on its sensitivity label. This model is enforced by the operating system itself, making it more rigid and secure than Discretionary Access Control (DAC), where users can grant or revoke access to their own files. 
+
+• System-enforced policies: The system-wide security policy, set by administrators, is mandatory for all users, unlike DAC where the owner controls permissions. 
+• Security labels: Both users and resources are assigned security labels. For example, a user might have a "secret" clearance, and a file might be labeled "confidential". 
+• Access rules: Access is granted only if the user's clearance level meets or exceeds the resource's sensitivity level, as defined by the policy. 
+• High-security environments: MAC is typically used in high-security environments like military or government systems where strict control is paramount. 
+• Examples: SELinux (Security-Enhanced Linux) is a well-known example of a MAC system, as explained by Android Open Source Project (https://source.android.com/docs/security/features/selinux/concepts) and Oracle Help Center (https://docs.oracle.com/en/operating-systems/oracle-linux/6/porting/section_jsf_zpm_wm.html).
+
+</details>

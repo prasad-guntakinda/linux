@@ -636,6 +636,12 @@ dnf clean all
 
 ---
 
+## Change Kernel Runtime Parameters:
+
+- Non-persistent (runtime only) using `sysctl`
+- Persistent (survive reboot) using `/etc/sysctl.conf` or `/etc/sysctl.d/*.conf`
+
+
 
 
 

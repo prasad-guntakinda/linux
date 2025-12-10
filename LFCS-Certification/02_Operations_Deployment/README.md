@@ -1038,6 +1038,9 @@ sudo xfs_repair -v /dev/vdb1
 ## 9. Change Kernel Runtime Parameters: sysctl
 
 ### how to change both persistent, and non-persistent runtime parameters for the Linux kernel?
+- Non-persistent (runtime only) using `sysctl`
+- Persistent (survive reboot) using `/etc/sysctl.conf` or `/etc/sysctl.d/*.conf`
+
 
 #### Non-Persistent: changing by using the sysctl command
 ![kernel_runtime_params](./images/kernel_runtime_params.png)
@@ -1107,6 +1110,426 @@ in the `/etc/sysctl.d/` directory instead.
 ---
 
 ## 10. SELinux:
+
+- https://www.redhat.com/en/topics/linux/what-is-selinux
+
+
+- SELinux is a security architecture for Linux that uses a mandatory access control (MAC) system to enforce strict policies, restricting processes and users from accessing resources they haven't been explicitly allowed to, even if they have root privileges. 
+- It works by assigning security labels to all files, processes, and ports, which are then checked against a set of rules (the SELinux policy) before any access is granted. 
+- This approach enhances security by limiting the potential damage from compromised processes and mitigating privilege escalation attacks. 
+This video explains the basics of SELinux and how it works: 
+How SELinux works 
+
+• Labeling: Every file, process, and port on the system is assigned a security label, also called a security context. These labels are used to group resources and define relationships between them. 
+• Policies and rules: The SELinux policy contains rules that define what actions are allowed between different security contexts. For example, a rule might state that the  process is allowed to read files with the  label. 
+• Access control: When a process (the subject) requests access to a resource (the object), the SELinux policy is consulted. The kernel checks the security contexts of both the process and the object against the defined rules. 
+• Decision: If the policy allows the action, access is granted. If the policy denies it, the action is blocked, and a denial message is logged. SELinux operates on a "default deny" principle, meaning any action not explicitly permitted is denied. 
+• Modes of operation: 
+
+	• Permissive: Denials are logged but not enforced, which is useful for testing and development. 
+	• Enforcing: Denials are both logged and enforced, preventing the forbidden action. 
+
+• Benefits: By confining processes to their designated security contexts, SELinux can significantly reduce the impact of security vulnerabilities. For example, a compromised web server process cannot access sensitive files or execute unauthorized commands because the policy restricts its access to a specific set of files and ports. 
+
+
+Below is a **clean, well-structured Markdown learning notes document** for the LFCS topic:
+
+✔ **SELinux Concepts**
+
+✔ **Mandatory Access Control (MAC) using SELinux**
+
+✔ **SELinux modes, contexts, booleans, troubleshooting**
+
+✔ **LFCS Exam-oriented commands**
+
+
+
+### 1. What is SELinux?
+
+**SELinux (Security-Enhanced Linux)** is a Linux kernel security module that provides an additional layer of access control based on **Mandatory Access Control (MAC)**.
+
+- Developed by NSA, integrated into Linux kernel
+- Stronger than DAC (Discretionary Access Control)
+- Policies define what processes *can* and *cannot* do
+- Restricts actions even if a user is root
+
+#### Why SELinux Matters in LFCS?
+- RH-based systems use SELinux by default
+- Many LFCS tasks include fixing SELinux issues
+- Essential for configuring secure services
+
+---
+
+### 2. DAC vs MAC (Core Concept)
+
+#### **DAC – Discretionary Access Control**
+- Based on owners, groups, file permissions (`rwx`)
+- Owners can change permissions — hence “discretionary”
+- Example: `chmod`, `chown`
+
+#### **MAC – Mandatory Access Control**
+- Enforced by SELinux policies
+- Users and processes **cannot** override it
+- Access allowed only if SELinux rules permit
+
+---
+
+#### 3. SELinux Modes
+
+SELinux can operate in three modes:
+
+| Mode | Description | Enforcement |
+|------|-------------|-------------|
+| **Enforcing** | SELinux policy is applied | ✓ Allowed / ✗ Blocked (denied) |
+| **Permissive** | Does not block but logs violations | ✓ Allowed + logs |
+| **Disabled** | SELinux not loaded | No enforcement |
+
+#### Commands
+
+#### Check SELinux status:
+```bash
+sestatus
+getenforce
+```
+
+#### Change mode temporarily:
+
+```bash
+sudo setenforce 1   # enforcing
+sudo setenforce 0   # permissive
+```
+
+#### Make mode persistent:
+
+Edit `/etc/selinux/config`:
+
+```
+SELINUX=enforcing
+# or
+SELINUX=permissive
+SELINUX=disabled
+```
+
+---
+
+## 4. SELinux Concepts: Type Enforcement
+
+SELinux assigns **labels** to:
+
+* Files
+* Directories
+* Processes
+* Ports
+* Network interfaces
+
+A label has format:
+
+```
+user:role:type:level
+```
+
+Typical example:
+
+```
+system_u:object_r:httpd_sys_content_t:s0
+```
+
+### LFCS Focus Area
+
+🎯 **Type field (`_t`) is the MOST important**, used to enforce access rules.
+
+---
+
+## 5. SELinux Contexts
+
+Show file contexts:
+
+```bash
+ls -Z
+```
+
+Show process contexts:
+
+```bash
+ps -eZ
+```
+
+Show port contexts:
+
+```bash
+sudo semanage port -l | grep http
+```
+
+---
+
+## 6. Changing File Contexts
+
+### Temporary Change (Non-Persistent)
+
+```bash
+sudo chcon -t httpd_sys_content_t /var/www/html/index.html
+```
+
+### Persistent Change (Using semanage)
+
+```bash
+sudo semanage fcontext -a -t httpd_sys_content_t "/webapp(/.*)?"
+sudo restorecon -Rv /webapp
+```
+
+### When to use semanage?
+
+* When making **permanent** context changes
+* After reboots, file relabeling resets chcon changes
+
+---
+
+## 7. Common SELinux Types (Exam Relevant)
+
+| Type                     | Used For                  |
+| ------------------------ | ------------------------- |
+| `httpd_t`                | Apache process            |
+| `httpd_sys_content_t`    | Static web content        |
+| `httpd_sys_rw_content_t` | Writable web directories  |
+| `ssh_t`                  | SSH daemon                |
+| `var_log_t`              | Log files                 |
+| `user_home_t`            | User home directory files |
+
+---
+
+## 8. SELinux Booleans (Important for LFCS)
+
+Booleans allow enabling/disabling optional SELinux rules without changing policies.
+
+### List all booleans:
+
+```bash
+getsebool -a
+```
+
+### Check specific boolean:
+
+```bash
+getsebool httpd_enable_homedirs
+```
+
+### Temporarily set boolean:
+
+```bash
+sudo setsebool httpd_enable_homedirs on
+```
+
+### Persistent change:
+
+```bash
+sudo setsebool -P httpd_enable_homedirs on
+```
+
+### Common booleans for LFCS:
+
+| Boolean                     | Meaning                              |
+| --------------------------- | ------------------------------------ |
+| `httpd_enable_homedirs`     | Allow Apache to serve user home dirs |
+| `httpd_can_network_connect` | Allow Apache outbound connections    |
+| `ftp_home_dir`              | Allow FTP access to user home dirs   |
+| `nis_enabled`               | Allow NIS services                   |
+| `virt_use_nfs`              | Allow KVM to use NFS                 |
+
+---
+
+## 9. Troubleshooting SELinux
+
+### Check denied actions:
+
+```bash
+sudo ausearch -m avc -ts recent
+```
+
+### Or:
+
+```bash
+sudo journalctl -t setroubleshoot
+```
+
+### Using sealert (if installed):
+
+```bash
+sudo sealert -a /var/log/audit/audit.log
+```
+
+### Key Tip for Exam
+
+If something works in **permissive** mode but not **enforcing**, SELinux is blocking it.
+
+---
+
+## 10. Fixing SELinux Issues (LFCS Scenarios)
+
+### Scenario 1: Apache cannot read `/data/website`
+
+**Fix**: Set correct context.
+
+```bash
+sudo semanage fcontext -a -t httpd_sys_content_t "/data/website(/.*)?"
+sudo restorecon -R /data/website
+```
+
+---
+
+### Scenario 2: Apache needs to write to `/var/www/uploads`
+
+**Fix**:
+
+```bash
+sudo semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/uploads(/.*)?"
+sudo restorecon -R /var/www/uploads
+```
+
+---
+
+### Scenario 3: Apache cannot connect to a remote DB
+
+Enable the boolean:
+
+```bash
+sudo setsebool -P httpd_can_network_connect on
+```
+
+---
+
+### Scenario 4: Custom service fails due to denied port
+
+Check port:
+
+```bash
+sudo semanage port -l | grep 8080
+```
+
+Add port type:
+
+```bash
+sudo semanage port -a -t http_port_t -p tcp 8080
+```
+
+---
+
+## 11. Creating and Enforcing MAC Rules (LFCS Objective)
+
+### Step 1: Identify the resource
+
+Example:
+
+```
+/myapp/data
+```
+
+### Step 2: Identify process type
+
+Example:
+
+```
+myapp_t
+```
+
+### Step 3: Apply correct SELinux type to files
+
+```bash
+sudo semanage fcontext -a -t myapp_data_t "/myapp/data(/.*)?"
+sudo restorecon -Rv /myapp/data
+```
+
+### Step 4: Enable required SELinux booleans
+
+```bash
+sudo setsebool -P myapp_write_data on
+```
+
+### Step 5: Verify using audit logs
+
+```bash
+sudo ausearch -m avc -ts recent
+```
+
+---
+
+## 12. Checking SELinux State on Boot
+
+List system settings:
+
+```bash
+cat /etc/selinux/config
+```
+
+Force relabel:
+
+```bash
+sudo touch /.autorelabel
+sudo reboot
+```
+
+---
+
+## 13. Important SELinux Commands Summary
+
+| Task                     | Command                            |
+| ------------------------ | ---------------------------------- |
+| Check mode               | `sestatus`, `getenforce`           |
+| Change mode temporarily  | `setenforce`                       |
+| Make mode persistent     | edit `/etc/selinux/config`         |
+| View file context        | `ls -Z`                            |
+| View process context     | `ps -eZ`                           |
+| Temporary context change | `chcon`                            |
+| Permanent context change | `semanage fcontext` → `restorecon` |
+| Manage booleans          | `getsebool`, `setsebool -P`        |
+| View SELinux port rules  | `semanage port -l`                 |
+| Add port rule            | `semanage port -a`                 |
+| Troubleshoot denials     | `ausearch -m avc`                  |
+
+---
+
+## 14. Quick Practice Questions (Exam Style)
+
+1. Allow Apache to serve `/srv/web` and make it persistent.
+2. Allow Apache to connect to external DBs.
+3. Find SELinux denials from last boot.
+4. Change SELinux to permissive mode temporarily.
+5. Add port 9000 to be used by HTTP service.
+6. Apply label `myapp_data_t` to `/opt/myapp/data/`.
+7. Enable FTP to read home directories.
+
+(If you want solutions, I can add them too.)
+
+---
+
+## 15. Quick Reference Cheat Sheet
+
+```
+Temporary context change:     chcon -t type file
+Permanent context change:     semanage fcontext -a -t type "path(/.*)?"
+Restore contexts:             restorecon -R path
+
+List booleans:                getsebool -a
+Set boolean temporarily:      setsebool name on
+Set boolean permanently:      setsebool -P name on
+
+Audit logs:                   ausearch -m avc -ts recent
+SELinux status:               sestatus
+```
+
+---
+
+# ✔ End of Notes
+
+These notes are **LFCS-ready**, concise, and hands-on.
+Save this `.md` file in your GitHub repo for revision.
+
+```
+
+If you want, I can also generate:
+- **SELinux practice questions + solutions**
+- **A full SELinux troubleshooting cheat sheet**
+- **LFCS mock exam set focused on SELinux**
+```
 
 
 
