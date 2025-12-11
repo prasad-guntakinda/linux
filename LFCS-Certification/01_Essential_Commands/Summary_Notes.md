@@ -267,13 +267,561 @@ chmod +t directory
 ---
 
 
-# 2. Hard Links and Soft Links: ln, readlink
+# 3. Hard Links and Soft Links: ln,
+
+## How a file is stored in filesystem?
+
+```bash
+echo "Picture of Milo the dog" > Pictures/family_dog.jpg
+stat Pictures/family_dog.jpg
+```
+- Filesystems like xfs, ext4, and others, keep track of data with the help of `inodes`. 
+- An `inode` is a filesystem data structure that stores metadata about a file (or directory) — everything except the filename and the file’s actual data blocks.
+
+- Our picture might have blocks of data scattered all over the disk, but the inode remembers where all the pieces are stored. It also keeps track of metadata. 
+
+### Key concepts
+
+-  **File name** → stored in directory.The directory entry maps a filename to an inode number
+
+- **Inode** → stores actual file data & metadata (permissions, size, blocks)A file’s identity on disk is the inode; filenames are directory entries that reference it.
+
+- __Hard links:__  A **hard link** is an **additional name** for the same **inode** (same file on disk). 
+- __Symbolic links:__ A symlink is a separate file with its own inode that contains a path — it does not share the target’s inode. Creating new object what has a path
+
+- __Per-filesystem:__ Inodes exist per filesystem and inode numbers are unique only within that filesystem. Filesystems allocate a fixed number (or ratio) of inodes when created — you can run out of inodes even if there is free disk space.
+
+```
+Filename  → points to → Inode → contains actual file data 
+```
+
+```shell
+ls -i file.txt        # prints inode number before filename
+ls -li               # long listing including inode
+stat file.txt        # detailed info including inode on Linux
+#Find a file by inode:
+find /path -inum 123456 -print
+df -i               # shows used/available inodes per filesystem
+```
+
+### Hard Links:
+
+- A **hard link** is an **additional name** for the same **inode** (same file on disk).
+- Hard link == real file (both point to same inode)
+- If you delete original file → hard link still works
+- Multiple filenames (directory entries) can reference the same inode. 
+- The inode’s link count increases for each hard link. Removing a filename decrements the link count
+- The data is freed only when link count reaches `0` and no process has the file open. Same object two references
+- Cannot create hard links to:
+    - Directories
+    - Files on different filesystems/partitions
+
+#### How to create hard links?
+
+```bash
+echo "hello world" > file1.txt
+# create hard link
+ln file1.txt file1_hard.txt
+# check inode numbers + link count
+# Both have the same inode number. This means they are the same file with two different names
+ls -li file1.txt file1_hard.txt
+stat file1.txt
+```
+- It will be created as regular file and file type is regular `-` not `l`
+
+### Soft Links:
+
+- A **soft link** is a **pointer** to another file (like a Windows shortcut).
+- Soft link has a **different inode**
+-If you delete original file → **soft link breaks**
+- Can link to:
+    - Directories
+    - Files across filesystems
+
+#### How to create soft links?
+
+```bash
+ln -s file1.txt file1_soft.txt
+# Check inode numbers
+ls -li file1.txt file1_soft.txt
+# Soft Link Breaks if Target is Removed
+rm file1.txt
+cat file1_soft.txt
+# soft link to a directory
+ln -s /var/log logs_link
+```
+
+- Different `inode` numbers
+- Arrow (`→`) shows the link target
+- Soft link stores **path**, not file data
+
+
+### Summary:
+
+| Feature                     | Hard Link   | Soft Link (Symbolic) |
+| --------------------------- | ----------- | -------------------- |
+| Points to                   | inode       | filename/path        |
+| Inode number                | same        | different            |
+| Works across filesystems    | ❌ No        | ✔ Yes                |
+| Works with directories      | ❌ No        | ✔ Yes                |
+| Breaks if original deleted? | ❌ No        | ✔ Yes                |
+| Acts like the original file | ✔ Yes       | ❌ No                 |
+| Can identify target         | No easy way | `→` path visible     |
 
 
 ---
 
 # 3. Searching for Files: find
 
+- __find:__ search for files in a directory hierarchy
+
+- __syntax:__
+
+```bash
+find [path...] [options] [expression]
+
+```
+ 
+- The  command recursively searches the directory tree starting from the specified `[path]`  and locates files based on the criteria defined in the `[expression]`
+
+## Key Components 
+
+- `[path...]:` Specifies the starting directory or directories for the search. 
+
+    - `.` searches the current directory and its subdirectories. 
+	- `/` searches the entire filesystem starting from the root directory. 
+	- `~` searches from the current user's home directory. 
+
+- `[options]`: Controls the overall behavior of the search, such as handling of symbolic links (`-L`,`-P` ) or search depth (`-maxdepth`). 
+- `[expression]`: This is the core of the command, defining the criteria (tests) for filtering files and the actions to perform on matching files. Multiple expressions can be combined using logical operators like `-and`  (implied if omitted), `-or`, and `!` (not). 
+
+## Common find Expressions 
+
+- Expressions consist of tests and actions: [6]  
+
+| Category | Option | Description | Example  |
+| --- | --- | --- | --- |
+| __Name__ | `-name` | Searches for files with an exact name match (case-sensitive). | `find . -name "notes.txt"`  |
+|  | `-iname` | Case-insensitive name search. | `find /home -iname "steve*"`  |
+| __Type__ | `-type` | Filters by file type. | `find /var -type d` (directories)  |
+| — | `f`,`d` ,`l` | Descriptors for regular file, directory, and symbolic link, respectively. | `find . -type f` (regular files)  |
+| __Size__ | `-size` | Finds files by size. Use `+` for greater than, `-` for less than. | `find /path -size +100M` (greater than 100MB)  |
+| — | `c`, `k`, `M`, `G` | Suffixes for bytes, kilobytes, megabytes, and gigabytes. | `find . -size -1k` (less than 1kB)  |
+| __Time__ | `-mtime` | Finds files modified within/more than `n` days ago. | `find . -mtime -7` (modified within the last 7 days)  |
+|  | `-mmin` | Finds files modified within/more than `n` minutes ago. | `ind . -mmin -60` (modified within the last hour)  |
+| __Ownership__ | `-user` | Finds files owned by a specific user. | `find / -user syslog`  |
+|  | `-group` | Finds files owned by a specific group. | `find . -group staff`  |
+| __Permissions__ | `-perm` | Finds files with specific permissions. | `find . -perm 644`  |
+| __Action__ | `-exec` | Executes a specified command on each matched file. | `find . -name "*.log" -exec rm {} \\;`  |
+| — | `-delete` | Deletes the found files or empty directories. | `find . -type f -name "*.tmp" -delete`  |
+
+
 ---
+
+
+# 4. Compare & Manipulate File Content
+
+- __basic commands:__ `cat`, `tac`, `head`, `tail`, `sed`, `cut`, `uniq`, `sort`, `diff`, 
+
+---
+
+# 5. Pagers and Vim Editor:
+
+
+        - Vim navigation  
+        - Editing commands  
+        - Searching & replacing  
+        - Copy/paste/delete  
+        - Working with multiple files  
+        - Pagers (`less`, `more`)
+
+## Vim Cheat Sheet:
+
+
+Vim operates in **three main modes**:
+
+| Mode | Description | Enter |
+|------|-------------|--------|
+| **Normal Mode** | navigation, delete, copy, commands | `Esc` |
+| **Insert Mode** | typing text | `i`, `a`, `o` |
+| **Command Mode** | saving, quitting, settings | `:` |
+
+---
+
+### 1. OPENING & SAVING FILES
+
+| Action | Command |
+|--------|---------|
+| Open a file | `vim file.txt` |
+| Save (write) | `:w` |
+| Quit | `:q` |
+| Save & quit | `:wq` |
+| Quit without saving | `:q!` |
+| Save as another name | `:w newfile.txt` |
+
+---
+
+### 2. INSERT MODE COMMANDS
+
+| Command | Meaning |
+|---------|----------|
+| `i` | Insert text at cursor |
+| `I` | Insert at start of line |
+| `a` | Append text after cursor |
+| `A` | Append at end of line |
+| `o` | Open new line **below** |
+| `O` | Open new line **above** |
+
+- To exit Insert Mode use `Esc`
+
+---
+### 3. MOVEMENT / NAVIGATION
+
+| Keys | Action |
+|------|---------|
+| `h` | left |
+| `j` | down |
+| `k` | up |
+| `l` | right |
+| `0` | beginning of line |
+| `$` | end of line |
+| `w` | next word |
+| `b` | previous word |
+| `gg` | go to top of file |
+| `G` | go to bottom |
+| `:N` | go to line N (example: `:25`) |
+
+---
+
+### 4. DELETING TEXT
+
+| Command | Meaning |
+|---------|----------|
+| `x` | delete character |
+| `dd` | delete whole line |
+| `5dd` | delete 5 lines |
+| `dw` | delete word |
+| `D` | delete to end of line |
+
+---
+
+### 5. COPY & PASTE (YANK & PUT)
+
+| Command | Meaning |
+|---------|----------|
+| `yy` | copy (yank) line |
+| `5yy` | copy 5 lines |
+| `p` | paste below cursor |
+| `P` | paste above cursor |
+
+---
+
+### 6. UNDO / REDO
+
+| Command | Action |
+|---------|---------|
+| `u` | undo |
+| `Ctrl + r` | redo |
+
+---
+
+### 7. SEARCHING INSIDE VIM
+
+Search for “error”:
+```
+
+/error
+
+Next match: n
+Previous match:N
+Case-insensitive: /error\c
+Search backwards: ``?
+```
+
+
+---
+
+### 8. SEARCH & REPLACE (IMPORTANT FOR LFCS)
+
+Replace first occurrence per line:
+
+```
+:%s/old/new/
+```
+
+Replace globally in each line:
+
+```
+:%s/old/new/g
+```
+
+Replace with confirmation:
+
+```
+:%s/old/new/gc
+```
+
+Replace only on specific lines:
+
+```
+:10,20s/error/warning/g
+```
+
+---
+
+### 9. VISUAL MODE (SELECTING TEXT)
+
+| Mode                | Command    |
+| ------------------- | ---------- |
+| Character selection | `v`        |
+| Line selection      | `V`        |
+| Block selection     | `Ctrl + v` |
+
+Actions after selection:
+
+* `y` → copy
+* `d` → delete
+* `p` → paste
+
+---
+
+### 10. MULTIPLE FILES / BUFFERS
+
+Open multiple:
+
+```bash
+vim file1 file2 file3
+```
+
+Switch buffers:
+
+```
+:bn   # next buffer
+:bp   # previous buffer
+:ls   # list open buffers
+```
+
+Open a new file inside Vim:
+
+```
+:e newfile
+```
+
+---
+
+## Pagers: less, more
+
+Pagers help view large text files **page-by-page**.
+
+### 1. `less` (most powerful)
+
+Open file:
+
+```bash
+less /var/log/messages
+```
+
+#### Navigation:
+
+| Action        | Key                 |
+| ------------- | ------------------- |
+| Down / Up     | `j` / `k`           |
+| Page down     | `space` or PageDown |
+| Page up       | `b`                 |
+| Start of file | `g`                 |
+| End of file   | `G`                 |
+
+#### Searching:
+
+Search for "error":
+
+```
+/error
+Next match: n
+Previous match:N
+Quit:q
+```
+
+#### View long output pipe:
+
+```bash
+dmesg | less
+```
+
+---
+
+### 2. `more` (basic pager)
+
+Open a file:
+
+```bash
+more textfile
+```
+
+### Navigation:
+
+| Action    | Key     |
+| --------- | ------- |
+| Next page | `space` |
+| Next line | `Enter` |
+| Search    | `/word` |
+| Quit      | `q`     |
+
+---
+
+## When to Use Which?
+
+| Task                   | Recommended Tool |
+| ---------------------- | ---------------- |
+| Large log files        | **less**         |
+| Searching inside files | **less**         |
+| Quick view             | `more` or `less` |
+| Viewing piped output   | `less`, `more`   |
+
+---
+
+## QUICK COMMAND SUMMARY
+
+| Task                   | Command                    |
+| ---------------------- | -------------------------- |
+| Edit config file       | `vim /etc/ssh/sshd_config` |
+| Search inside file     | `/pattern`                 |
+| Replace text in file   | `:%s/old/new/g`            |
+| View logs paged        | `less /var/log/messages`   |
+| Follow logs            | `tail -f /var/log/secure`  |
+| Move to line 55 in Vim | `:55`                      |
+| Copy 10 lines          | `10yy`                     |
+| Paste                  | `p`                        |
+
+---
+
+
+# 6. Searching Files usig grep:
+
+## Summary
+
+| Task                | Command                  |
+| ------------------- | ------------------------ |
+| Basic search        | `grep "text" file`       |
+| Case-insensitive    | `grep -i "text" file`    |
+| Line numbers        | `grep -n "text" file`    |
+| Count matches       | `grep -c "text" file`    |
+| Recursive search    | `grep -r "text" dir/`    |
+| Invert match        | `grep -v "text" file`    |
+| Whole word          | `grep -w "text" file`    |
+| Regex search        | `grep -E "pattern" file` |
+| Show filenames only | `grep -l "text" *`       |
+| Print match only    | `grep -o "pattern" file` |
+
+## grep with regular expressions
+
+- `grep` uses **Basic Regular Expressions (BRE)** by default.  
+- To use **Extended Regular Expressions (ERE)**, you must use: `grep -E or egrep`
+- BRE supports:
+
+- `.` (any character)
+- `[]` character classes  
+- `[^]` negated classes  
+- `*` (zero or more repetitions)
+- `^` (start of line)
+- `$` (end of line)
+- `\+` (one or more repetitions)
+* `\?` (optional character)
+* `\|` (alternation)
+* `\(\)` (grouping)
+- Escape needed for `+`, `?`, `|`, `()` in BRE
+
+### Examples
+
+```bash
+#Match lines starting or ending with patterns
+# lines starting with ERROR
+grep "^ERROR" logfile
+grep "success$" logfile
+# match single char
+grep "c.t" words.txt
+# cat, cut, cot,cet,..etc 
+# matches any vowel
+grep "[aeiou]" file.txt
+# matches digits
+grep "[0-9]" file.txt
+# zero or more occurences
+grep "ab*c" file.txt
+#ac, abc, abbc, abbbc,.. 0 or more `b`s allowed
+# Match one or more digits
+grep "[0-9]\+" file.txt
+#Match optional character
+grep "colou\?r" words.txt # color or colour
+# alternation
+grep "cat\|dog" animals.txt
+# grouping
+grep "\(test\)\+" file.txt
+```
+
+## Extended Regular Expressions:
+
+```bash
+grep -E "pattern"
+egrep "pattern"
+```
+- ERE supports more regex features **without escaping**:
+
+* `+` (one or more)
+* `?` (zero or one)
+* `{n,m}` (quantifiers)
+* `|` (alternation)
+* `()` grouping
+
+```bash
+grep -E "[0-9]+"
+grep -E "colou?r" words.txt
+grep -E "(error|fail|warn)" logfile
+```
+
+### Quantifiers `{n}`, `{n,m}`, `{n,}`
+
+- `{n,m}` `n`: min count, `m`: max count
+
+```bash
+#Match exactly 3 digits:
+grep -E "[0-9]{3}" file.txt
+# Match 2–4 letters:
+grep -E "[A-Za-z]{2,4}" file.txt
+#Match 3 or more digits:
+grep -E "[0-9]{3,}"
+```
+
+---
+
+
+# 7. Archive, Backup, Compress, Unpack and Uncompress files 
+
+- tar
+- gzip
+- bzip2
+- xz
+- zip/unzip
+- rsync
+
+
+
+---
+
+# 8. Redirecting input-output: >, >>, |, 1>, 2>
+
+
+---
+
+
+# 9. SSL/TLS certificates
+
+
+---
+
+# 10. Git Operations
+
+
+---
+
 
 
