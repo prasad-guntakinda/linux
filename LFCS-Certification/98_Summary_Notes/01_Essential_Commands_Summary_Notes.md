@@ -1,4 +1,16 @@
-# Essential Commands Summary:
+# 01_Essential Commands Summary Notes:
+
+
+        - create, delete,copy and move files and directories
+        - create and manage hard links and soft links
+        - File Permissions, SUID, SGID, Sticky Bit
+        - Search for files(find), Pagers and VI Demo
+        - Compare and Manipulate File Content
+        - Search file by grep, basic and extended regular expressions
+        - Archive, backup, compress, uncompress files
+        - Input-Output redirection (>, >>, |, 2>)
+        - Git Operations
+        - Work with SSL certs
 
 
 ## 1.1 Files and Directories
@@ -1014,17 +1026,608 @@ rsync -av --link-dest=/backup/prev/ /data/ /backup/current/
 
 # 8. Redirecting input-output: >, >>, |, 1>, 2>
 
+        * Output redirection
+        * Input redirection
+        * Append vs overwrite
+        * Redirecting errors
+        * Redirecting both output & errors
+        * Pipelines
+        * Here-documents
+        * Here-strings
+
+Redirecting input/output is a core Linux skill.  
+It allows you to send command results into files, combine commands, and control where errors go.
+
+Linux has 3 standard streams:
+
+| Stream | File Descriptor | Description |
+|--------|-----------------|-------------|
+| STDIN  | 0 | Input to a program |
+| STDOUT | 1 | Normal output |
+| STDERR | 2 | Error messages |
+
+## Redirecting Output (STDOUT)
+
+- Overwrite a file (`>`)
+- Write output to a file, replacing existing content:
+```bash
+# If `file.txt` existed, it is overwritten.
+echo "Hello" > file.txt
+```
+
+- Append to a file (`>>`)
+
+```bash
+# Adds content to the end of the file.
+echo "Hello Again" >> file.txt
+```
+
+- Examples:
+
+```bash
+#Redirect command output to a file
+ls -l > listing.txt
+# Append version:
+ls -l >> listing.txt
+```
+
+## Redirecting Input (STDIN)
+
+- Use `<` to feed a file into a command.
+- 
+
+```bash
+# Count words in a file
+wc -l < file.txt
+# Sort using a file as input
+sort < names.txt
+```
+
+## Redirecting Error Messages (STDERR)
+
+- STDERR uses file descriptor `2`.
+
+
+```bash
+# Redirect errors to a file
+ls /nonexistent 2> errors.txt
+# Append errors:
+ls /nonexistent 2>> errors.txt
+```
+
+## Redirecting BOTH Output & Errors
+
+```bash
+# Method 1: Redirect each separately
+command > output.txt 2> error.txt
+
+# Method 2: Merge STDERR into STDOUT
+# `> all.txt` → redirect stdout
+# `2>&1` → send stderr to same file
+command > all.txt 2>&1
+
+# Method 3: Redirect both STDOUT & STDERR (modern)
+command &> file.txt
+# Append version:
+command &>> file.txt
+```
+
+## Pipes (|) — Send output to another command
+
+- Pipes take STDOUT of one command and send it as STDIN to another.
+
+- Examples 
+
+```bash
+# View logs with grep
+journalctl -xe | grep ssh
+# Sort process list by memory usage
+ps aux | sort -k4 -nr
+# Show top 10 IP addresses from a log
+cut -d' ' -f1 access.log | sort | uniq -c | sort -nr | head
+# Pipe multiple commands
+ls -l | grep "^d" | wc -l
+```
+
+## Here-Documents (<<)
+
+- A Here Document (or heredoc) is a type of redirection that allows you to pass multiple lines of input to a command directly from within a script or the command line.
+
+- Basic Syntax
+You define a heredoc using the `<<` operator followed by a "delimiter" word (usually `EOF`, `STOP`, or `END`).
+
+```bash
+command << DELIMITER
+line 1
+line 2
+line 3
+DELIMITER
+```
+
+-Example:
+
+```bash
+cat << EOF > greetings.txt
+Hello Prasad,
+Welcome to Linux in 2025.
+This file was created using a heredoc.
+EOF
+```
+
+- __cat:__ The command receiving the input.
+- __<< EOF:__ Tells the shell "start reading everything until you see the word EOF".
+- __> greetings.txt:__ Redirects the output of cat into a file.
+
+- Example2:
+
+```bash
+
+grep "app" << EOF
+banana
+mango
+app
+cherry
+EOF
+
+```
+
+### Key Rules and Features:
+
+-  __The Ending Delimiter:__ The closing word (`EOF`) must be on its own line and have no leading or trailing spaces.
+
+- __Variable Expansion:__ By default, variables inside a heredoc are expanded.
+```bash
+NAME="Prasad"
+cat << EOF
+User: $NAME
+EOF
+# Output: User: Prasad
+```
+- __Disabling Expansion:__ If you wrap the first delimiter in quotes, the shell treats the text as literal (no variables will be expanded).
+```bash
+cat << "EOF"
+The variable $NAME will not print Prasad.
+EOF
+```
+
+- __Indentation Support (<<-):__ If you are writing a script and want to indent your heredoc for readability, use `<<-`. This tells the shell to ignore leading tabs (but not spaces).
+
+
+## Here-Strings (<<<)
+
+- Sends a **single string** as input to a command.
+
+```bash
+grep oo <<< "food"
+wc -w <<< "hello world linux"
+```
+
+- __Comparison:__ Heredoc vs. Herestring
+- Heredoc (<< EOF): Used for multiple lines.
+- Herestring (<<<): Used for a single string or variable.
+Example: grep "search" <<< "$long_variable_text"
+
+
+## Redirecting to /dev/null (Discard Output):
+
+- Useful for ignoring output or errors.
+
+
+```bash
+# Discard normal output
+command > /dev/null
+# Discard only errors
+command 2> /dev/null
+# Discard both
+command > /dev/null 2>&1
+
+command &> /dev/null
+
+```
+
+
+## Summary Table:
+
+
+| Task            | Command               |
+| --------------- | --------------------- |
+| Redirect output | `>`                   |
+| Append output   | `>>`                  |
+| Redirect input  | `<`                   |
+| Redirect errors | `2>`                  |
+| Redirect both   | `&>` or `> file 2>&1` |
+| Ignore output   | `> /dev/null`         |
+| Ignore errors   | `2> /dev/null`        |
+| Pipe output     | `command1 \|command2` | 
+| Here-document   | `<<EOF`               |
+| Here-string     | `<<< "text"`          |
+
+
+
 
 ---
 
 
 # 9. SSL/TLS certificates
 
+LFCS **DOES test**:
+✅ Generate **private keys**
+✅ Create **CSR (Certificate Signing Request)**
+✅ Create **self-signed certificates**
+✅ Configure SSL for a **web server (Apache / Nginx)**
+✅ Verify certificates
+✅ Understand file locations & permissions
+
+
+## Key SSL/TLS Components (Minimal Theory)
+
+| Component                     | Purpose                       |
+| ----------------------------- | ----------------------------- |
+| Private Key (`.key`)          | Secret key, must be protected |
+| CSR (`.csr`)                  | Request sent to CA            |
+| Certificate (`.crt` / `.pem`) | Public identity               |
+| CA                            | Entity that signs cert        |
+
+> 🔑 **Private key must never be world-readable**
+
+## 1. Generate a Private Key
+
+```bash
+# generates 2048-bit RSA private key
+openssl genrsa -out server.key 2048
+# Secure it: # restrict access to owner only
+chmod 600 server.key
+# Verify Key: validates private key integrity
+openssl rsa -in server.key -check
+
+```
+
+## 2. Create a Certificate Signing Request (CSR)
+
+- Method_1: generate private key first and by using it generate CSR
+
+```bash
+# extension can be .key/.pem
+openssl genrsa -out my_private.key 2048
+# generates CSR using existing private key
+openssl req -new -key my_private.key -out server.csr
+
+```
+
+- Method_2: Directly generate new private key + CSR request at a time
+
+```bash
+# The same but just using req:
+openssl req -newkey rsa:2048 -keyout my_private.pem -out my_csr_req.pem
+# view CSR contents
+openssl req -in my_csr_req.pem -noout -text
+
+
+```
+
+- During prompts:
+
+* **Common Name (CN)** → hostname (e.g. `www.example.com`)
+* Other fields can be minimal for exam
+
+
+## 3. Create a Self-Signed Certificate 
+
+
+```bash
+# creates self-signed cert with existing private key valid for 1 year
+openssl req -x509 -new -nodes \
+  -key server.key \
+  -sha256 \
+  -days 365 \
+  -out server.crt
+
+# generates new private key + self-signed certificate
+openssl req -x509 -newkey rsa:2048 -keyout key.pem -out req.pem
+openssl x509 -in server.crt -noout -text
+# view certificate details
+```
+## 4. Common Certificate Locations (Ubuntu)
+
+| File Type    | Location            |
+| ------------ | ------------------- |
+| Certificates | `/etc/ssl/certs/`   |
+| Private Keys | `/etc/ssl/private/` |
+
+- Move files:
+
+```bash
+cp server.crt /etc/ssl/certs/
+cp server.key /etc/ssl/private/
+chmod 600 /etc/ssl/private/server.key
+```
+---
+
+## 5. Configure Apache with SSL (Ubuntu)
+
+
+```bash
+# Install Apache & SSL Module
+apt update
+apt install -y apache2
+a2enmod ssl                  # enable SSL module
+systemctl restart apache2
+# Default SSL Site
+/etc/apache2/sites-available/default-ssl.conf
+# Enable it 
+a2ensite default-ssl
+systemctl reload apache2
+```
+
+#### Configure Certificate Paths
+
+- create self-signed cert
+```bash
+openssl req -x509 -newkey rsa:2048 -keyout pr_apache2_pk.key -out pr_apache2_x509_cert.crt
+cp pr_apache2_x509_cert.crt  /etc/ssl/certs/
+cp pr_apache2_pk.key /etc/ssl/private/
+chmod 600 /etc/ssl/private/pr_apache2_pk.key
+```
+- Edit:
+
+```bash
+vi /etc/apache2/sites-available/default-ssl.conf
+```
+
+- Set:
+
+```apache
+SSLCertificateFile    /etc/ssl/certs/pr_apache2_x509_cert.crt
+SSLCertificateKeyFile /etc/ssl/private/pr_apache2_pk.key
+```
+
+- Restart:
+
+```bash
+systemctl restart apache2
+```
 
 ---
 
+#### Verify HTTPS
+
+```bash
+ss -tuln | grep 443       # confirm HTTPS port
+curl -k https://localhost
+# -k allows self-signed cert
+```
+ 
+---
+
+## 6. Configure Nginx with SSL (Alternative)
+
+- Install:
+
+```bash
+apt install -y nginx
+# Edit server block:
+vi /etc/nginx/sites-available/default
+```
+
+- Example:
+
+```nginx
+server {
+    listen 443 ssl;
+    ssl_certificate     /etc/ssl/certs/pr_apache2_x509_cert.crt;
+    ssl_certificate_key /etc/ssl/private/pr_apache2_pk.key;
+}
+```
+- Test & reload:
+
+```bash
+nginx -t
+systemctl reload nginx
+```
+
+---
+
+#### Verify Certificates (Important Commands)
+
+```bash
+openssl x509 -in server.crt -noout -text
+# view certificate details
+```
+
+```bash
+openssl s_client -connect localhost:443
+# verify live SSL service
+```
+
+---
+
+#### Permissions & Security (Exam Critical)
+
+```bash
+ls -l /etc/ssl/private/server.key
+-rw------- root root server.key
+```
+
+✔ Only **root** should read private key
+❌ World-readable key = FAIL
+
+---
+
+####  Self-Signed Certificate Behavior (Exam Concept)
+
+* Browser warning = expected
+* Encryption = still valid
+* Identity = not trusted
+
+#### Typical LFCS Exam Tasks
+
+✔ Generate private key
+✔ Create self-signed certificate
+✔ Configure HTTPS
+✔ Restart service
+✔ Verify using curl / ss
+
+#### Common LFCS Mistakes (Avoid These)
+
+❌ Forgetting to enable SSL module
+❌ Wrong certificate path
+❌ Incorrect file permissions
+❌ Not restarting service
+❌ Using HTTP instead of HTTPS
+
+#### Quick Practice Tasks (Highly Recommended)
+
+1️⃣ Create a self-signed cert for `localhost`
+2️⃣ Enable HTTPS on Apache
+3️⃣ Verify with `curl -k`
+4️⃣ Check port 443
+5️⃣ Inspect cert with OpenSSL
+
+#### LFCS EXAM GOLDEN TIP
+
+> If the question says **“secure the web server using SSL/TLS”**
+> → **Self-signed cert + HTTPS is enough**
+
+
+## How to enable https in local apache2 server?
+1. Apache requires the mod_ssl module to handle encrypted connections.
+```bash 
+# Enable SSL: 
+sudo a2enmod ssl
+# Restart Apache: 
+sudo systemctl restart apache2
+```
+2. Generate a Self-Signed Certificate
+```bash
+# Note: When prompted for "Common Name," enter localhost or your local IP address.
+sudo openssl req -x509 -noenc -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/apache-selfsigned.key -out /etc/ssl/certs/apache-selfsigned.crt
+``` 
+3. Configure the SSL Virtual Host
+- update SSL configuration file to use your new certificate. 
+```bash
+# Open the config file: 
+sudo vi /etc/apache2/sites-available/default-ssl.conf
+# Update certificate paths:
+# SSLCertificateFile  /etc/ssl/certs/apache-selfsigned.crt
+# SSLCertificateKeyFile  /etc/ssl/private/apache-selfsigned.key 
+# SSLEngine on 
+
+# Enable the site: 
+sudo a2ensite default-ssl 
+
+# Adjust Firewall (If Enabled)
+sudo ufw allow "Apache Full"
+
+# Verify and Restart
+sudo apache2ctl configtest
+sudo systemctl restart apache2
+# confirm HTTPS port
+ss -tuln | grep 443       
+curl -k https://localhost
+```
+
+#### Summary Checklist
+
+- Enable SSL Module: 	`sudo a2enmod ssl`
+- Generate Cert:	`sudo openssl req ... -keyout ... -out ...`
+- Enable SSL Site:	`sudo a2ensite default-ssl`
+- Test Config:	`sudo apache2ctl configtest`
+- Reload Apache	`sudo systemctl restart apache2`
+- You should now be able to access your server at `https://localhost`. 
+---
+
+
 # 10. Git Operations
 
+## create a new repository on the command line
+```bash
+
+echo "# test1" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.ibm.com/Prasad-Guntakinda/test1.git
+git push -u origin main
+```
+
+## git config
+
+### 1. The Three Configuration Scopes
+- Git stores settings in different files depending on the scope. You must know how to target these specifically:
+
+- __System (--system):__ Applied to all users on the server. (File: /etc/gitconfig).
+- __Global (--global):__ Applied to your specific user. (File: `~/.gitconfig`). This is the most common for the exam.
+- __Local (--local):__ Applied only to the current repository. (File: `.git/config`).
+
+### 2. Essential Identity Configs
+- You must set your identity before you can commit.
+- Set Name: `git config --global user.name "Your Name"`
+- Set Email: `git config --global user.email "you@example.com"`
+
+### 3. Critical Operational Configs
+- The exam may require you to optimize how Git behaves:
+- Default Editor: If you are more comfortable with nano than vim, change the editor Git uses for commit messages: `git config --global core.editor "nano"`
+- Default Branch Name: Ensure new repos use main instead of master:`git config --global init.defaultBranch main`
+- Credential Helper: To avoid typing passwords repeatedly (if using HTTPS):
+`git config --global credential.helper cache `(Stores in memory for 15 mins)
+- Line Endings (LF vs CRLF): Important for cross-platform compatibility:
+`git config --global core.autocrlf input` (Recommended for Linux/LFCS).
+
+### 4. Verification Commands
+- Use these to verify your work during the exam:
+- List all active configs: `git config --list`
+- Show where configs are coming from: `git config --list --show-origin`
+- Get a specific value: `git config user.email`
+
+### 5. Config Editing Tips
+- if you want to edit the global file, first change default editor to "vim"
+
+- To use Nano: `git config --global core.editor "nano"`
+- To use Vim: `git config --global core.editor "vim"`
+- To use VS Code: `git config --global core.editor "code --wait"`
+
+- If the exam asks you to "manually edit the global configuration," use the shortcut: `git config --global --edit` (This opens your `~/.gitconfig` in the default editor).
+
+
+## Summary Cheetsheet
+```bash
+# Setup
+git init                          # start new repo
+git clone URL                     # clone existing repo
+
+# Status & history
+git status                        # see status
+git log --oneline                 # compact history
+git diff                          # see changes
+
+# Staging & committing
+git add <file>                    # stage file
+git add .                         # stage all
+git commit -m "message"           # commit
+
+# Branching
+git branch                        # list branches
+git checkout -b new-branch        # create + switch
+git checkout branch-name          # switch branch
+git merge branch-name             # merge into current branch
+
+# Remotes
+git remote -v                     # show remotes
+git push -u origin branch         # push first time
+git push                          # push later
+git pull                          # fetch + merge
+
+# Undo
+git reset HEAD <file>             # unstage
+git checkout -- <file>            # discard local changes
+git revert <commit>               # safely undo commit
+
+# Stash
+git stash                         # stash changes
+git stash list                    # list stashes
+git stash pop                     # apply + remove latest stash
+```
 
 ---
 

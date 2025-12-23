@@ -16,7 +16,6 @@ You can save this directly to your GitHub notes.
 
 ---
 
-````markdown
 # Redirecting Input & Output — LFCS Notes + Examples
 
 Redirecting input/output is a core Linux skill.  
@@ -40,7 +39,7 @@ Linux has 3 standard streams:
 Write output to a file, replacing existing content:
 ```bash
 echo "Hello" > file.txt
-````
+```
 
 If `file.txt` existed, it is overwritten.
 

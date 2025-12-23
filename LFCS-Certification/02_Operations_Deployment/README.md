@@ -239,7 +239,7 @@ systemctl cat ssh.service
 ![ssh_service_status](./images/ssh_service_status.png)
 
 
-- Sothis systemdservice is responsible for the lifecycle of the SSH daemon. To start up the SSH server application, restart it when needed, andso on. 
+- So this systemd service is responsible for the lifecycle of the SSH daemon. To start up the SSH server application, restart it when needed, andso on. 
 - To see the status of this service, we can run:
 
 ```bash

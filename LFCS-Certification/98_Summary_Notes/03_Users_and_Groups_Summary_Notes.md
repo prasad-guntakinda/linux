@@ -1,23 +1,34 @@
-# Linux Users and Groups
+# Users and Groups Summary Notes:
+
+
+        1. Create and manage local user and group accounts
+        2. Configure and manage ACLs
+        3. Configure user resource limits
+        4. Manage personal and system-wide environment profiles
+        5. Configure the system to use LDAP user and group accounts
+
+
+---
+
+# 1. Users and Groups
 
 In Linux, users and groups are fundamental components for managing system security and permissions. They help control access to files, directories, and system resources.
 
-## LEARN
-### Users
+## Users
 
 - A user in Linux is an account that can log in and perform tasks.
 - Each user has a unique identifier (UID) and associated permissions.
 - All the users info are stored in `/etc/passwd` file. 
 - Hashed passwords for users are stored in `/etc/shadow` file.
 
-#### Types of Users
+### Types of Users
 | User Type    | Description                                                                 |
 | ------------ | --------------------------------------------------------------------------- |
 | Root User    | The superuser with unrestricted access to the system.                       |
 | Regular User | A standard user with limited permissions.                                   |
 | System User  | A user created by the system for running specific services or applications. |
 
-#### User Information on /etc/passwd
+### User Information on /etc/passwd
 
 User details are stored in the `/etc/passwd` file. Each line represents a user and contains the following fields:
 ```
@@ -353,6 +364,295 @@ groupdel dev2
 # you can change primary group of the user by using usermod -g or use groupdel -f to force delete group
 groupdel -f dev2
 ```
+
+#### How to add user to the sudo group?
+
+- Option_1: modifying `/etc/sudoers` file by using `visudo` command
+- Option_2: use commands `usermod -aG sudo <username>` or `gpasswd -a <username> sudo`
+
+
+### Files:
+
+```bash
+/etc/passwd    → user info
+/etc/shadow    → passwords & expiry
+/etc/group     → group info
+/etc/gshadow   → group passwords & expiry
+/etc/login.defs → defaults
+/etc/skel       → new user init files template dir
+```
+
+
+---
+
+# 2. Configure and Manage ACLs
+
+## What is ACL?
+
+- **Access Control Lists (ACLs)** extend the traditional Linux permission model (`owner / group / others`) by allowing:
+
+* Permissions for **specific users**
+* Permissions for **specific groups**
+* **Default permissions** for new files/directories
+
+> 🔑 ACLs are used **when chmod/chown is not sufficient**
+
+- Example: file1.txt file is owned by user john but alice want to access the file. only for alice we don't want to change permissions for all others to `rwx` and we don't want to change the ownership of a file to alice, in this scenario we can use ACL by providing alice to rwx permission without changing ownership of a file by using `setfacl -m u:alice:rwx file1.txt`
+
+
+## setup:
+
+```bash
+sudo apt update
+sudo apt install acl
+setfacl --version
+getfacl --version
+```
+
+## When to use ACLs?
+
+* Multiple users need different permissions on the **same file**
+* You **cannot change ownership**
+* Shared directories require **automatic permissions**
+* Fine-grained access control is required
+
+## ACL Commands 
+
+```bash
+# View ACL
+getfacl file_or_directory
+# Set ACL
+setfacl [options] file_or_directory
+# Remove ACL
+setfacl -b file
+```
+### ACL Permission Types
+
+| Type | Meaning                        |
+| ---- | ------------------------------ |
+| `u`  | User                           |
+| `g`  | Group                          |
+| `o`  | Others                         |
+| `m`  | Mask (max allowed permissions) |
+| `d`  | Default ACL                    |
+
+---
+
+## Examples
+
+```bash
+# User ACL
+setfacl -m u:alice:rwx file
+# Group ACL
+setfacl -m g:engineering:rw file
+# Remove Specific ACL. if file has user & group acls it removes only for user
+setfacl -x u:alice file
+ls -l # result shows + symbol if ACL is applied on it
+```
+
+### ACL Mask (⚠️ VERY IMPORTANT)
+
+- What is Mask?
+
+* Mask defines the **maximum effective permissions**
+* Applies to **all named users and groups**
+
+### Example
+
+```bash
+setfacl -m u:alice:rwx file
+setfacl -m m:rx file
+# Effective permission = `r-x` (not `rwx`)
+getfacl file
+```
+
+### Default ACLs (Critical for Directories)
+
+- Default ACLs:
+    * Apply only to **directories**
+    * Automatically inherited by new files/directories
+
+
+```bash
+# Set Default ACL for all new files & directories
+setfacl -R -d -m u:dev1:r directory
+# verify
+getfacl directory
+```
+
+- Examples:
+
+```bash
+# Grant user access without changing owner
+setfacl -m u:alice:rw report.txt
+# Scenario 2: Shared directory with auto permissions
+mkdir /shared
+chown root:engineering /shared
+chmod 770 /shared
+setfacl -d -m g:engineering:rwx /shared
+# Scenario 3: Read-only access for one user
+setfacl -m u:dev1:r file.txt
+# Scenario 4: Remove all ACLs
+setfacl -b file.txt
+```
+
+---
+
+## ACL vs Traditional Permissions
+
+| Feature             | chmod | ACL |
+| ------------------- | ----- | --- |
+| Per-user control    | ❌     | ✅   |
+| Multiple groups     | ❌     | ✅   |
+| Default inheritance | ❌     | ✅   |
+| Fine-grained        | ❌     | ✅   |
+
+
+
+## Backup & Restore ACLs
+
+```bash
+# Backup
+getfacl -R /shared > acl.backup
+# Restore
+setfacl --restore=acl.backup
+```
+
+### Note:
+> If the task says **“without changing ownership or permissions”** 
+> **ACL is mandatory**
+
+---
+
+# 3. Configure user resource limits
+
+### Config Files
+
+```bash
+/etc/security/limits.conf         # main limits file
+/etc/security/limits.d/*.conf     # modular limits
+```
+
+### Syntax
+
+```text
+user|@group soft|hard resource value
+```
+
+### Common Resources
+
+* `nproc` → number of processes
+* `nofile` → open files
+* `cpu` → CPU time (seconds)
+* `as` → virtual memory (KB)
+
+```bash
+alice soft nproc 10               # max 10 processes (soft)
+dev1 soft nofile 1024             # open files limit
+@dev hard as 500000               # memory limit for group
+tempuser hard cpu 300             # 5 minutes CPU time
+```
+
+```bash
+ulimit -a                         # verify applied limits
+```
+
+> ⚠️ Logout/login required for limits to apply
+
+---
+
+
+# 4. Manage personal and system-wide environment profiles
+
+### Per-bash session
+```bash
+printenv 
+# or
+env
+# only for this session, will loose changes when we re-login 
+export MY_VAR=hello
+
+```
+
+### Per-user
+
+```bash
+~/.profile                        # login shell variables
+~/.bashrc                         # interactive shell variables
+```
+
+```bash
+echo 'export EDITOR=vim' >> ~/.bashrc   # user-specific variable
+```
+
+```bash
+echo "Authorized access only" > /etc/motd  # message of the day
+```
+
+
+### System-wide (ALL users)
+
+```bash
+/etc/profile                      # global shell settings
+/etc/profile.d/*.sh               # preferred place for custom vars
+/etc/environment                  # simple KEY=VALUE (no export)
+```
+
+```bash
+echo 'APP_ENV=prod' >> /etc/environment    # set variable for all users
+```
+
+```bash
+echo 'export PATH=$PATH:/opt/tools/bin' > /etc/profile.d/tools.sh
+chmod +x /etc/profile.d/tools.sh            # add PATH system-wide
+```
+
+
+---
+
+
+# 5. Configure the system to use LDAP user and group accounts
+
+```bash
+apt update
+apt install -y sssd sssd-ldap libnss-sss libpam-sss ldap-utils
+```
+
+```bash
+/etc/sssd/sssd.conf               # main LDAP client config
+chmod 600 /etc/sssd/sssd.conf     # required permissions
+```
+
+```ini
+[sssd]
+services = nss, pam
+domains = LDAP
+
+[domain/LDAP]
+id_provider = ldap
+ldap_uri = ldap://ldap.example.com
+ldap_search_base = dc=example,dc=com
+```
+
+```bash
+systemctl enable --now sssd       # start LDAP client service
+```
+
+```bash
+/etc/nsswitch.conf                # name resolution order
+passwd: files sss
+group:  files sss
+shadow: files sss
+```
+
+```bash
+getent passwd                     # list local + LDAP users
+getent group                      # list local + LDAP groups
+id ldapuser                       # verify LDAP user resolution
+```
+
+---
+
 
 
 

@@ -1,6 +1,6 @@
 # SSL or TLS certifcates
 
-![ssl_certs](./.images/ssl_certs_1.png)
+![ssl_certs](./images/ssl_certs_1.png)
 
 ## What Are SSL Certificates?
 - Let's think about what happens when we use a password on a website. Or when we enter credit card details. There are two big problems:
