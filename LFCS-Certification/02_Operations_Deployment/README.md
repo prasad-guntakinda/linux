@@ -334,7 +334,8 @@ sudo journalctl -f
 - /lib/systemd/system (or /usr/lib/systemd/system on many distros) contains package-supplied unit files.
   - Debian/Ubuntu: /lib/systemd/system
   - Fedora/RHEL: /usr/lib/systemd/system
-- /etc/systemd/system contains administrator-supplied unit files and overrides — they take precedence.Admin/local units and overrides belong in /etc/systemd/system so they survive package upgrades and express local intent.
+- /etc/systemd/system contains administrator-supplied unit files and overrides — they take precedence.
+- Admin/local units and overrides belong in /etc/systemd/system so they survive package upgrades and express local intent.
 - In practice: don't edit package files in /lib or /usr/lib; create overrides or local units under /etc.
 - There is also a runtime location (/run/systemd/system) used for transient or dynamically generated units (higher than vendor but lower than /etc for persistence intent).
 
