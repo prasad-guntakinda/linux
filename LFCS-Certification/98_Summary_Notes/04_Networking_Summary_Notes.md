@@ -569,7 +569,7 @@ journalctl -xe | grep ufw
 - Example Command:
 - Use SNAT : When your server has a __Static (fixed) IP__ address. It is faster and more efficient because the kernel doesn't have to check the interface IP for every packet.
 
-`iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to-source 203.0.113.10`
+`iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to-source <static_public_ip>`
 
 - __Breakdown:__
 - This command tells the Linux kernel to rewrite the Source IP of all outgoing packets to a specific public IP address. 
@@ -581,13 +581,13 @@ journalctl -xe | grep ufw
 | `-t nat` | Specifies the NAT table. This table is used exclusively for translating addresses (changing IPs/ports).|
 | `-A POSTROUTING` | Appends the rule to the POSTROUTING chain. This chain processes packets after the routing decision is made, just before they leave the network interface. |
 | `-o eth0` | Specifies the Output Interface. The rule only applies to traffic exiting via eth0 (typically the public/WAN interface). |
-| `-j SNAT` | Defines the Jump target. SNAT stands for Source Network Address Translation. |
-| `--to-source 203.0.113.10` | Specifies the new source IP to be placed in the packet header. Any internal IP (e.g., 192.168.1.5) will be replaced with this public IP. |
+| `-j SNAT` | The jump target; tells iptables to perform Source NAT. |
+| `--to-source 203.0.113.10` | Specifies the __static public IP__ to use as the new source address for outgoing packets |
 
 
 ### SNAT (Source Network Address Translation): Dynamic IP (DHCP)
 
-- Use __MASQUERADE__: When your server has a Dynamic IP (e.g., DHCP from an ISP).
+- Use the `-j MASQUERADE` target when your public IP is dynamic (assigned via DHCP or PPP). It automatically detects the IP currently assigned to the outgoing interface.
 - Scenario: You want devices on `eth1` (private) to access the internet via `eth0` (public).
 - Command:
 ```bash
@@ -597,7 +597,7 @@ sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 - `-t nat`: Targets the NAT table.
 - `-A POSTROUTING`: Appends to the chain that handles packets just before they leave the interface.
 - `-o eth0`: Specifies the __outbound__ (public) interface.
-- `-j MASQUERADE`: Masks the private IP with the dynamic public one. 
+- `-j MASQUERADE`: A specialized form of SNAT. It does not require a `--to-source IP` because it dynamically pulls the address from the specified interface.
 
 ### SNAT: Additional Options (Refining the Rule)
 - You can make this rule more specific to avoid affecting all traffic:
@@ -607,15 +607,34 @@ sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 - Specify a Range of IPs: If you have multiple public IPs, you can load-balance. `--to-source 203.0.113.10-203.0.113.20`
 
 #### Verification & Persistence
-- Check the rule: sudo iptables -t nat -L -n -v
-- Persistence (Ubuntu 24.x/25.x): Remember that iptables commands are lost on reboot. To make this permanent for the LFCS exam, you must save it:
-`sudo sh -c "iptables-save > /etc/iptables/rules.v4" `(assuming iptables-persistent is installed).
+- Check the rule: `sudo iptables -t nat -L -n -v`
+- Persistence (Ubuntu 24.x/25.x): Remember that iptables commands are lost on reboot. 
+- To make this permanent for the LFCS exam, you must save it:
+
+```bash
+sudo apt update
+sudo apt install iptables-persistent
+# During installation, it will ask to save current IPv4 and IPv6 rules. Select Yes.
+```
+
+- __Save new changes later:__ If you add new rules after installation, use the following to overwrite the saved files:
+
+```bash
+sudo sh -c 'iptables-save > /etc/iptables/rules.v4'
+sudo sh -c 'ip6tables-save > /etc/iptables/rules.v6'
+# Alternatively, use the helper command: 
+sudo netfilter-persistent save
+sudo netfilter-persistent reload 
+
+```
+
+- Here, `sh -c "command"` fixes the redirection problem, you can use `tee` also, 
+`sudo iptables-save | sudo tee /etc/iptables/rules.v4 > /dev/null`
+
+- If you cannot install helper packages, you can manually export and import rules. 
+- Export current rules: `sudo iptables-save > /etc/iptables.conf`
 
 ---
-
-
-
-
 
 ### 3. Port Redirection (Port Forwarding)
 
@@ -667,9 +686,10 @@ sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j DNAT --to-destin
 ### Persistence (Surviving Reboot)
 - Unlike `ufw`, `iptables` commands are lost on reboot. 
 - the standard way to save them on Ubuntu is the `iptables-persistent` package.
-- Install: `sudo apt install iptables-persistent`
-- :
+
 ```bash
+# Install:
+sudo apt install iptables-persistent
 # Save Rules
 sudo iptables-save | sudo tee /etc/iptables/rules.v4
 # Reload Rules
@@ -702,29 +722,55 @@ sudo netfilter-persistent reload
 
 # 5. Configure static routing
 
-## Understanding Static Routing
-- A static route tells the kernel: "To reach network `X`, send the traffic to gateway `Y` via interface `Z`."
+## Fundamental Routing Concepts
+- __Routing Table:__ A database stored in the kernel that defines where to send packets based on their destination IP.
+- __Default Gateway:__ The "route of last resort." Packets with no specific match in the routing table are sent here.
 
-- Destination: The remote network (e.g., 10.20.0.0/24).
-- Gateway (Next Hop): The IP of the router on your local segment (e.g., 192.168.1.1).
-- Interface: Your local network card (e.g., eth0).
+- __Static vs. Dynamic:__ Static routing is manually configured by an administrator; dynamic routing uses protocols (like OSPF or BGP) to adapt to network changes. 
 
-## Temporary Configuration (ip command)
+## Runtime Routing (Non-Persistent):
+
 - Use this for immediate testing. These changes are lost after a reboot.
+- The modern standard for managing routes on Linux is the ip route command from the iproute2 package. 
+
+
+Add Static Route	sudo ip route add <network/mask> via <gateway_ip> dev <interface>
+Delete a Route	sudo ip route del <network/mask>
+Trace Packet Path	ip route get <destination_ip> (shows which route the kernel will pick)
 
 | Task | Command |
 | ---- | ------- |
-| View Routing Table | `ip route show` |
-| Add a Static Route | `sudo ip route add 10.20.0.0/24 via 192.168.1.1 dev eth0` |
-| Add a Host Route | `sudo ip route add 10.20.0.5 via 192.168.1.1` |
-| Delete a Route | `sudo ip route del 10.20.0.0/24` |
-| Change Default Gateway | `sudo ip route add default via 192.168.1.1` |
+| View Routing Table | `ip route show` or simply `ip route` |
+| Add Default Gateway | `sudo ip route add default via <gateway_ip>` | 
+| Add a Static Route | `sudo ip route add <network/mask> via <gateway_ip> dev <interface>` |
+| Add a Host Route | `sudo ip route add <single_IP> via <gateway_IP>` |
+| Delete a Route | `sudo ip route del <network/mask>` |
+| Trace Packet Path | `ip route get <destination_ip>` (shows which route the kernel will pick) |
 
-- A standard static route directs traffic to an entire range of IP addresses (a subnet). `sudo ip route add 192.168.2.0/24 via 10.0.0.1`
-- A host route directs traffic to one specific IP address. `sudo ip route add 192.168.2.50 via 10.0.0.1`
+- `<network/mask>`:  (The Destination)
+- Purpose: Defines the target network you want to reach.
+- Example: 192.168.50.0/24
+- Explanation: This uses CIDR notation.
+  - `192.168.50.0`is the network address.
+  - `/24` (Subnet Mask 255.255.255.0) defines the size of the network.
+  - If you want to route to a single IP only, use `/32` (e.g., 10.10.10.5/32).
 
+- `via <gateway_ip>` (The Next Hop):
 
-## Persistent Configuration (Netplan)
+- Purpose: The address of the router or "next hop" that knows how to get to the destination.
+- Example: via 192.168.1.1
+- Requirement: The <gateway_ip> must be reachable on one of your existing, directly connected networks. You cannot "hop" over an IP that your system doesn't already know how to talk to.
+
+- `dev <interface>`(The Exit Door)
+- Purpose: Explicitly tells the kernel which physical or virtual network card to use to send the packet.
+- Example: dev eth0 or dev ens33
+- Explanation: While the kernel can often figure this out based on the via IP, explicitly defining the device ensures the packet leaves through the correct interface, which is critical on systems with multiple network cards (multi-homed).
+
+- __Example:__
+- If your office network is 10.0.0.0/8 and your local gateway is 192.168.1.254 on your eth0 card, the command would be:
+- `sudo ip route add 10.0.0.0/8 via 192.168.1.254 dev eth0`
+
+## Persistent Routing (Netplan)
 - To make a route permanent, you must edit the YAML configuration file in `/etc/netplan/` (e.g., 01-netcfg.yaml).
 - Example Configuration:
 ```yaml
@@ -741,17 +787,20 @@ network:
         - to: 172.16.0.0/16
           via: 192.168.1.254
           metric: 100
+        - to: default
+         via: 192.168.1.1
 ```
 - `to:` The destination network in CIDR notation.
 - `via:` The gateway IP.
 - `metric:` (Optional) Priority of the route (lower number = higher priority).
-
+- default: IPv4 either use `to: default` or `to: 0.0.0.0/0` 
+- IPv6: `to:default` or `to: ::/0`
 - Apply the changes:
 - Test: `sudo netplan try` (allows rollback if you lose connection).
 - Apply: `sudo netplan apply`
 
 ##  Verification and Troubleshooting
-- Check the route is active: `ip route get 10.20.0.5`
+- Check the route is active: `ip route get <destination_ip>`
 - Result: Shows exactly which interface and gateway the system will use to reach that specific IP.
 
 - Trace the path: `traceroute 10.20.0.5`
