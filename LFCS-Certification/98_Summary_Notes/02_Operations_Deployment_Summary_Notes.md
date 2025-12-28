@@ -1047,6 +1047,13 @@ vm.swappiness = 10
 
 ### Install libvirt (Ubuntu 24.x)
 
+- On Ubuntu, `virt-manager` is often located in the `universe` repository. If this is disabled, apt cannot find it. 
+```bash
+sudo add-apt-repository universe
+sudo apt update
+```
+
+
 ```bash
 apt update
 # install KVM + libvirt + CLI tools
