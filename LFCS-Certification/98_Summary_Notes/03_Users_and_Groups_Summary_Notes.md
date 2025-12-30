@@ -553,6 +553,12 @@ dev1 soft nofile 1024             # open files limit
 tempuser hard cpu 300             # 5 minutes CPU time
 ```
 
+### Apply the changes:
+- The user must __log out and log back in__ . 
+- This is because limits are loaded by the `pam_limits.so` module only during the session initialization (login).
+
+- Verify the change:
+Once logged in as that user, run:
 ```bash
 ulimit -a                         # verify applied limits
 ```

@@ -204,4 +204,524 @@ Do not restart the SSH service after making the changes.
 ---
 
 
+Perfect 👍
+Below is your **LFCS Mock Exam – Question & Answer (Q&A) Format**, clean and exam-friendly, so you can **revise everything in one pass**.
+
+---
+
+# ✅ **LFCS Mock Exam – Question & Answer Format**
+
+---
+
+## **1. File Search & Permissions**
+
+### **Q1. Find all files executable by the owner and save output to `/opt/foundthem.txt`.**
+
+**A:**
+
+```bash
+find /opt/findme -type f -perm -u=x > /opt/foundthem.txt
+```
+
+---
+
+### **Q2. Find all files with SETUID permission and delete them.**
+
+**A:**
+
+```bash
+find /opt/findme -type f -perm -4000 -delete
+```
+
+---
+
+### **Q3. Find all files larger than 1KB and copy them to `/opt`.**
+
+**A:**
+
+```bash
+find /opt/findme -type f -size +1k -exec cp {} /opt/ \;
+```
+
+---
+
+# **2. Script & Cron Job**
+
+### **Q4. Create a script to copy `/var/www` to `/opt/www-backup`.**
+
+**A:**
+
+```bash
+vi /opt/script.sh
+```
+
+```bash
+#!/bin/bash
+cp -r /var/www /opt/www-backup/
+```
+
+```bash
+chmod +x /opt/script.sh
+```
+
+---
+
+### **Q5. Schedule the script to run daily at 4 AM system-wide.**
+
+**A:**
+
+```bash
+sudo vi /etc/crontab
+```
+
+Add:
+
+```bash
+0 4 * * * root /opt/script.sh
+```
+
+---
+
+# **3. User Limits**
+
+### **Q6. Limit user `john` to max 30 processes (hard limit).**
+
+**A:**
+
+```bash
+sudo vi /etc/security/limits.conf
+```
+
+```bash
+john hard nproc 30
+```
+
+---
+
+### **Q7. Limit user `jane` to max file size of 1024 KB (soft limit).**
+
+**A:**
+
+```bash
+jane soft fsize 1024
+```
+
+---
+
+# **4. User Management**
+
+### **Q8. Create user `mary` with `/bin/dash` shell.**
+
+**A:**
+
+```bash
+sudo useradd -m -s /bin/dash mary
+```
+
+---
+
+### **Q9. Set password to `1234`.**
+
+**A:**
+
+```bash
+echo "mary:1234" | sudo chpasswd
+```
+
+---
+
+### **Q10. Add mary to sudo group.**
+
+**A:**
+
+```bash
+sudo usermod -aG sudo mary
+```
+
+---
+
+### **Q11. Change mary’s primary group to `developers`.**
+
+**A:**
+
+```bash
+sudo groupadd developers
+sudo usermod -g developers mary
+```
+
+---
+
+# **5. Kernel Parameter (Swappiness)**
+
+### **Q12. Set `vm.swappiness=10` temporarily and permanently.**
+
+**A:**
+
+```bash
+sudo sysctl -w vm.swappiness=10
+```
+
+```bash
+echo "vm.swappiness=10" | sudo tee /etc/sysctl.d/99-swappiness.conf
+```
+
+Apply:
+
+```bash
+sudo sysctl -p /etc/sysctl.d/99-swappiness.conf
+```
+
+---
+
+# **6. Filesystem Mounts**
+
+### **Q13. Mount `/dev/vdb1` permanently on `/backups`.**
+
+**A:**
+
+```bash
+sudo mkdir -p /backups
+sudo vi /etc/fstab
+```
+
+Add:
+
+```
+/dev/vdb1  /backups  xfs  defaults  0 0
+```
+
+```bash
+sudo mount -a
+```
+
+---
+
+### **Q14. Remount `/dev/vdb2` as read-only.**
+
+**A:**
+
+```bash
+sudo mount -o remount,ro /mnt
+```
+
+---
+
+# **7. LVM Tasks**
+
+### **Q15. Create physical volumes.**
+
+**A:**
+
+```bash
+sudo pvcreate /dev/vdc /dev/vdd
+```
+
+---
+
+### **Q16. Create volume group `volume1`.**
+
+**A:**
+
+```bash
+sudo vgcreate volume1 /dev/vdc /dev/vdd
+```
+
+---
+
+### **Q17. Create logical volume `website_files` (3GB).**
+
+**A:**
+
+```bash
+sudo lvcreate -L 3G -n website_files volume1
+```
+
+---
+
+# **8. Git Tasks**
+
+### **Q18. Initialize repo and connect to remote.**
+
+**A:**
+
+```bash
+cd ~/kode
+git init
+git remote add origin https://github.com/kodekloudhub/git-for-beginners-course.git
+```
+
+---
+
+### **Q19. Pull latest changes from master.**
+
+**A:**
+
+```bash
+git pull origin master
+```
+
+---
+
+# **9. Docker Tasks**
+
+### **Q20. Stop and remove running container.**
+
+**A:**
+
+```bash
+docker ps
+docker stop <container_id>
+docker rm <container_id>
+```
+
+---
+
+### **Q21. Build Docker image.**
+
+**A:**
+
+```bash
+cd ~/kode_web
+docker build -t kodekloudwebserv .
+```
+
+---
+
+### **Q22. Run container on port 8081 → 80.**
+
+**A:**
+
+```bash
+docker run -d -p 8081:80 --name webserver2 kodekloudwebserv
+```
+
+---
+
+# **10. NFS Export**
+
+### **Q23. Share `/home` as read-only for 10.0.0.0/24.**
+
+**A:**
+
+```bash
+sudo vi /etc/exports
+```
+
+```
+/home 10.0.0.0/24(ro,sync)
+```
+
+Apply:
+
+```bash
+sudo exportfs -rav
+```
+
+---
+
+# **11. Process Listening on Port 80**
+
+### **Q24. Identify application and PID.**
+
+**A:**
+
+```bash
+ss -tulnp | grep :80
+```
+
+OR
+
+```bash
+lsof -i :80
+```
+
+Master PID:
+
+```bash
+ps -ef | grep <process>
+```
+
+---
+
+### **Q25. Save results.**
+
+```bash
+echo "apache2" > /opt/process.txt
+echo "1234" >> /opt/process.txt
+```
+
+---
+
+# **12. Network Configuration**
+
+### **Q26. Assign temporary IP.**
+
+**A:**
+
+```bash
+sudo ip addr add 10.5.0.1/24 dev <interface>
+```
+
+---
+
+### **Q27. Save default gateway.**
+
+**A:**
+
+```bash
+ip route | grep default | awk '{print $3}' > /opt/gateway.txt
+```
+
+---
+
+### **Q28. Save DNS server IP.**
+
+**A:**
+
+```bash
+cat /etc/resolv.conf | grep nameserver | awk '{print $2}' > /opt/dns.txt
+```
+
+---
+
+# **13. Disk Partitioning (node01)**
+
+### **Q29. Create partitions on `/dev/vdb`.**
+
+```bash
+sudo fdisk /dev/vdb
+```
+
+Create:
+
+* `/dev/vdb1` → 500MB
+* `/dev/vdb2` → 500MB
+
+---
+
+### **Q30. Format partitions.**
+
+```bash
+sudo mkfs.ext4 /dev/vdb1
+sudo mkfs.xfs /dev/vdb2
+```
+
+---
+
+### **Q31. Mount partitions and persist.**
+
+```bash
+sudo mkdir /part1 /part2
+sudo mount /dev/vdb1 /part1
+sudo mount /dev/vdb2 /part2
+```
+
+```bash
+sudo vi /etc/fstab
+```
+
+```
+/dev/vdb1 /part1 ext4 defaults 0 0
+/dev/vdb2 /part2 xfs  defaults 0 0
+```
+
+---
+
+# **14. Swap File**
+
+### **Q32. Create 1GB swap file and enable it.**
+
+```bash
+sudo fallocate -l 1024M /swfile
+sudo chmod 600 /swfile
+sudo mkswap /swfile
+sudo swapon /swfile
+```
+
+---
+
+### **Q33. Make swap persistent.**
+
+```bash
+echo "/swfile swap swap defaults 0 0" | sudo tee -a /etc/fstab
+```
+
+---
+
+# **15. High Disk I/O Processes**
+
+### **Q34. Identify high I/O process.**
+
+```bash
+iotop
+```
+
+### **Q35. Save device name.**
+
+```bash
+echo "/dev/vdb" > /opt/devname.txt
+```
+
+---
+
+### **Q36. Save PID with high read.**
+
+```bash
+echo 3886 > /opt/highread.pid
+```
+
+---
+
+# **16. Disk Space Cleanup**
+
+### **Q37. Identify nearly full filesystem.**
+
+```bash
+df -h
+```
+
+### **Q38. Find largest file and delete it.**
+
+```bash
+cd /mount_point
+du -sh * | sort -hr
+rm largest_file
+```
+
+---
+
+# **17. SSH Configuration**
+
+### **Q39. Disable X11 globally, enable only for user bob.**
+
+**A:**
+
+```bash
+sudo vi /etc/ssh/sshd_config
+```
+
+Add:
+
+```bash
+X11Forwarding no
+
+Match User bob
+    X11Forwarding yes
+```
+
+⚠️ **Do NOT restart sshd**
+
+---
+
+# ✅ DONE — LFCS EXAM READY 🎯
+
+---
+
+If you want next:
+✅ **Printable 1-page revision sheet**
+✅ **Command-only version**
+✅ **Timed mock exam simulation**
+
+Just tell me 👍
+
 

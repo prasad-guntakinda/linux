@@ -976,7 +976,7 @@ apt autoclean                # remove obsolete packages
 
 - Command: `echo "value" | sudo tee /proc/sys/path/to/parameter`
 - Example: `echo "1" | sudo tee /proc/sys/net/ipv4/ip_forward`
-
+- __For Runtime ONly changes don't run sysctl -p, it will override your changes, it is only for peristent changes__
 
 ## 5.3. Persistent Changes (Survives Reboot)
 - To make a change permanent, you must write it to a configuration file.
